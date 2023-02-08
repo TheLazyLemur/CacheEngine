@@ -6,7 +6,7 @@ import (
 )
 
 func getNewCache(t *testing.T) *Cache {
-	c := NewCache()
+	c := New()
 	if c == nil {
 		t.Errorf("new cache returned nil")
 	}
