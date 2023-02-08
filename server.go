@@ -59,7 +59,24 @@ func (s *Server) handleConn(conn net.Conn) {
 			break
 		}
 
-		msg := buf[:n]
-		fmt.Println(string(msg))
+		go s.handleCommand(conn, buf[:n])
 	}
+}
+
+func (s *Server) handleCommand(conn net.Conn, rawCmd []byte) {
+	msg, err := parseMessage(rawCmd)
+	if err != nil {
+		log.Println("error parsing command")
+		return
+	}
+
+	if err := handleSetCommand(conn, msg); err != nil {
+		log.Println("something went wrong while handling the SET command: ", msg)
+		return
+	}
+}
+
+func handleSetCommand(conn net.Conn, msg *Message) error {
+	log.Println("handling the set command: ", msg)
+	return nil
 }
