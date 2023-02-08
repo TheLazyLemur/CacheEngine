@@ -84,6 +84,13 @@ func (s *Server) handleCommand(conn net.Conn, rawCmd []byte) {
 			return
 		}
 	 	fmt.Println(string(value))
+	case CMDHas:
+		ok := s.handleHasCommand(conn, msg)
+	        if !ok {
+			log.Println("Did not have key")
+		}else{
+			log.Println("has key")
+		}
 	default:
 		log.Println("unknown command")
 	        return
@@ -102,6 +109,10 @@ func (s *Server) handleSetCommand(conn net.Conn, msg *Message) error {
 
 func (s *Server) handleGetCommand(conn net.Conn, msg *Message) ([]byte, error) {
 	return s.cacher.Get(msg.Key);
+}
+
+func (s *Server) handleHasCommand(conn net.Conn, msg *Message) bool {
+	return s.cacher.Has(msg.Key);
 }
 
 func (s *Server) sendToFollowers(ctx context.Context, msg *Message) error {

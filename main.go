@@ -34,5 +34,9 @@ func test(){
 
 	time.Sleep(time.Second * 2)
 
+	conn.Write([]byte("HAS Foo"))
+
+	time.Sleep(time.Second * 2)
+
 	conn.Write([]byte("GET Foo"))
 }

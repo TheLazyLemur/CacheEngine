@@ -12,6 +12,7 @@ type Command string
 const (
 	CMDSet Command = "SET"
 	CMDGet Command = "GET"
+	CMDHas Command = "HAS"
 )
 
 type Message struct {
@@ -50,6 +51,12 @@ func parseMessage(rawCmd []byte) (*Message, error) {
 	if msg.Cmd == CMDGet {
 		if len(parts) != 2 {
 			return nil, errors.New("invalid GET command")
+		}
+	}
+
+	if msg.Cmd == CMDHas {
+		if len(parts) != 2 {
+			return nil, errors.New("invalid HAS command")
 		}
 	}
 
