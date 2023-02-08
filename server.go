@@ -81,8 +81,12 @@ func (s *Server) handleCommand(conn net.Conn, rawCmd []byte) {
 		value, err := s.handleGetCommand(conn, msg)
 		if err != nil {
 			log.Println("something went wrong while handling the GET command: ", msg)
+			return
 		}
-		fmt.Println(string(value))
+	 	fmt.Println(string(value))
+	default:
+		log.Println("unknown command")
+	        return
 	}
 
 	go func() {
