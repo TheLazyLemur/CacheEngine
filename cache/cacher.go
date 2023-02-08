@@ -1,9 +1,7 @@
 package cache
 
-import "time"
-
 type Cacher interface {
-	Set([]byte, []byte, time.Duration) error
+	Set([]byte, []byte, int64) error
 	Has([]byte) bool
 	Get([]byte) ([]byte, error)
 	Delete([]byte)

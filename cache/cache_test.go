@@ -14,12 +14,12 @@ func getNewCache(t *testing.T) *Cache {
 	return c
 }
 
-func getTestValues() ([]byte, []byte, time.Duration){
+func getTestValues() ([]byte, []byte, int64){
 	key := []byte("test_key")
 	value := []byte("test_val")
-	ttl := 1 * time.Second
+	ttl := 1000
 
-	return key, value, ttl
+	return key, value, int64(ttl)
 }
 
 func TestNewCache(t *testing.T) {

@@ -30,13 +30,14 @@ func test(){
 		log.Fatal(err)
 	}
 
-	conn.Write([]byte("SET Foo Bar 25000000000000000"))
+	_, _ = conn.Write([]byte("SET Foo Bar -1"))
 
 	time.Sleep(time.Second * 2)
-
-	conn.Write([]byte("HAS Foo"))
+	_, _ = conn.Write([]byte("DEL Fooy"))
 
 	time.Sleep(time.Second * 2)
+	_, _ = conn.Write([]byte("HAS Foo"))
 
-	conn.Write([]byte("GET Foo"))
+	time.Sleep(time.Second * 2)
+	_, _ = conn.Write([]byte("GET Foo"))
 }

@@ -53,14 +53,16 @@ func (c *Cache) Get(key []byte) ([]byte, error) {
 	return val, nil
 }
 
-func (c *Cache) Set(key, value []byte, ttl time.Duration) error {
+func (c *Cache) Set(key, value []byte, ttl int64) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	go func(){
-		<-time.After(ttl)
-		c.Delete(key)
-	}()
+	if ttl >= 0 {
+		go func(){
+			<-time.After(time.Duration(ttl))
+			c.Delete(key)
+		}()
+	}
 
 	k := string(key)
 	_, ok := c.data[k]

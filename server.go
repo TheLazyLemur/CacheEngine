@@ -83,17 +83,19 @@ func (s *Server) handleCommand(conn net.Conn, rawCmd []byte) {
 			log.Println("something went wrong while handling the GET command: ", msg)
 			return
 		}
-	 	fmt.Println(string(value))
+		fmt.Println(string(value))
 	case CMDHas:
 		ok := s.handleHasCommand(conn, msg)
-	        if !ok {
+		if !ok {
 			log.Println("Did not have key")
 		}else{
 			log.Println("has key")
 		}
+	case CMDDel:
+		s.handleDelCommand(conn, msg)
 	default:
 		log.Println("unknown command")
-	        return
+		return
 	}
 
 	go func() {
@@ -113,6 +115,10 @@ func (s *Server) handleGetCommand(conn net.Conn, msg *Message) ([]byte, error) {
 
 func (s *Server) handleHasCommand(conn net.Conn, msg *Message) bool {
 	return s.cacher.Has(msg.Key);
+}
+
+func (s *Server) handleDelCommand(conn net.Conn, msg *Message) {
+	s.cacher.Delete(msg.Key);
 }
 
 func (s *Server) sendToFollowers(ctx context.Context, msg *Message) error {

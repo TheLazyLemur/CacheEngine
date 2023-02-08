@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type Command string
@@ -13,13 +12,14 @@ const (
 	CMDSet Command = "SET"
 	CMDGet Command = "GET"
 	CMDHas Command = "HAS"
+	CMDDel Command = "DEL"
 )
 
 type Message struct {
 	Cmd Command
 	Key []byte
 	Value []byte
-	Ttl time.Duration
+	Ttl int64
 }
 
 func parseMessage(rawCmd []byte) (*Message, error) {
@@ -45,7 +45,7 @@ func parseMessage(rawCmd []byte) (*Message, error) {
 			return nil, errors.New("invalid ttl format")
 		}
 
-		msg.Ttl = time.Duration(ttl)
+		msg.Ttl = int64(ttl)
 	}
 
 	if msg.Cmd == CMDGet {
@@ -55,6 +55,12 @@ func parseMessage(rawCmd []byte) (*Message, error) {
 	}
 
 	if msg.Cmd == CMDHas {
+		if len(parts) != 2 {
+			return nil, errors.New("invalid HAS command")
+		}
+	}
+
+	if msg.Cmd == CMDDel {
 		if len(parts) != 2 {
 			return nil, errors.New("invalid HAS command")
 		}
