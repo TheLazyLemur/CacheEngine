@@ -30,5 +30,9 @@ func test(){
 		log.Fatal(err)
 	}
 
-	conn.Write([]byte("SET Foo Bar 250000"))
+	conn.Write([]byte("SET Foo Bar 25000000000000000"))
+
+	time.Sleep(time.Second * 2)
+
+	conn.Write([]byte("GET Foo"))
 }

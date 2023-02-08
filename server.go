@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -70,13 +71,35 @@ func (s *Server) handleCommand(conn net.Conn, rawCmd []byte) {
 		return
 	}
 
-	if err := handleSetCommand(conn, msg); err != nil {
-		log.Println("something went wrong while handling the SET command: ", msg)
-		return
+	switch msg.Cmd {
+	case CMDSet:
+		if err := s.handleSetCommand(conn, msg); err != nil {
+			log.Println("something went wrong while handling the SET command: ", msg)
+			return
+		}
+	case CMDGet: 
+		value, err := s.handleGetCommand(conn, msg)
+		if err != nil {
+			log.Println("something went wrong while handling the GET command: ", msg)
+		}
+		fmt.Println(string(value))
 	}
+
+	go func() {
+		if err := s.sendToFollowers(context.TODO(), msg); err != nil {
+			log.Println("error sending to followers")
+		}
+	}()
 }
 
-func handleSetCommand(conn net.Conn, msg *Message) error {
-	log.Println("handling the set command: ", msg)
+func (s *Server) handleSetCommand(conn net.Conn, msg *Message) error {
+	return s.cacher.Set(msg.Key, msg.Value, msg.Ttl);
+}
+
+func (s *Server) handleGetCommand(conn net.Conn, msg *Message) ([]byte, error) {
+	return s.cacher.Get(msg.Key);
+}
+
+func (s *Server) sendToFollowers(ctx context.Context, msg *Message) error {
 	return nil
 }

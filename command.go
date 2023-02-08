@@ -47,5 +47,11 @@ func parseMessage(rawCmd []byte) (*Message, error) {
 		msg.Ttl = time.Duration(ttl)
 	}
 
+	if msg.Cmd == CMDGet {
+		if len(parts) != 2 {
+			return nil, errors.New("invalid GET command")
+		}
+	}
+
 	return msg, nil
 }
