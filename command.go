@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -20,6 +21,22 @@ type Message struct {
 	Key []byte
 	Value []byte
 	Ttl int64
+}
+
+func (m *Message) ToBytes() []byte {
+	var cmd string
+	switch m.Cmd {
+	case CMDSet:
+		cmd = fmt.Sprintf("%s %s %s %d", m.Cmd, m.Key, m.Value, m.Ttl)
+	case CMDGet:
+		cmd = fmt.Sprintf("%s %s", m.Cmd, m.Key)
+	case CMDHas:
+		cmd = fmt.Sprintf("%s %s", m.Cmd, m.Key)
+	case CMDDel:
+		cmd = fmt.Sprintf("%s %s", m.Cmd, m.Key)
+	}
+
+	return []byte(cmd)
 }
 
 func parseMessage(rawCmd []byte) (*Message, error) {

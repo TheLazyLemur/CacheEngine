@@ -1,20 +1,27 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net"
-	"time"
 
 	"github.com/thelazylemur/cacheengine/cache"
 )
 
 func main(){
-	opts := ServerOpts {
-		ListenAddr: ":3000",
-		IsLeader: true,
-	}
+	//testfollower()
+	var (
+		listenAddr = flag.String("listenaddr", ":3000", "listen address of the server")
+		leaderAddr = flag.String("leaderaddr", "", "listen address of the leader node")
+	)
 
-	go test()
+	flag.Parse()
+
+	opts := ServerOpts {
+		ListenAddr: *listenAddr,
+		IsLeader: len(*leaderAddr) == 0,
+		LeaderAddr: *leaderAddr,
+	}
 
 	server := NewServer(opts, cache.New())
 	if err := server.Start(); err != nil {
@@ -22,22 +29,16 @@ func main(){
 	}
 }
 
-func test(){
-	time.Sleep(time.Second * 2)
-
+func testfollower(){
 	conn, err := net.Dial("tcp", ":3000")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, _ = conn.Write([]byte("SET Foo Bar -1"))
+        _, err = conn.Write([]byte("SET Foo Bar 40000000"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	time.Sleep(time.Second * 2)
-	_, _ = conn.Write([]byte("DEL Fooy"))
-
-	time.Sleep(time.Second * 2)
-	_, _ = conn.Write([]byte("HAS Foo"))
-
-	time.Sleep(time.Second * 2)
-	_, _ = conn.Write([]byte("GET Foo"))
+	select{}
 }

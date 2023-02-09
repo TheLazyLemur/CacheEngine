@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -12,10 +13,12 @@ import (
 type ServerOpts struct {
 	ListenAddr string
 	IsLeader bool
+	LeaderAddr string
 }
 
 type Server struct {
-	ServerOpts ServerOpts
+	ServerOpts
+	followers map[net.Conn]struct{}
 	cacher cache.Cacher
 }
 
@@ -23,16 +26,30 @@ func NewServer(opts ServerOpts, c cache.Cacher) *Server {
 	return &Server{
 		ServerOpts: opts,
 		cacher: c,
+		//TODO: only allocate this as the leader
+		followers: make(map[net.Conn]struct{}),
 	}
 }
 
 func (s *Server) Start() error {
-	ln, err := net.Listen("tcp", s.ServerOpts.ListenAddr)
+	ln, err := net.Listen("tcp", s.ListenAddr)
 	if err != nil {
 		return fmt.Errorf("listen error: %s", err)
 	}
 
 	log.Printf("server starting on port [%s]\n", s.ServerOpts.ListenAddr)
+
+	if !s.IsLeader {
+		go func() {
+			conn, err := net.Dial("tcp", s.LeaderAddr)
+			fmt.Println("Connected with leader:", s.LeaderAddr)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+
+			s.handleConn(conn)
+		}()
+	}
 
 	for {
 		conn, err := ln.Accept()
@@ -53,6 +70,11 @@ func (s *Server) handleConn(conn net.Conn) {
 	}()
 
 	buf := make([]byte, 2048)
+
+	if s.IsLeader {
+		s.followers[conn] = struct{}{}
+	}
+
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
@@ -73,54 +95,71 @@ func (s *Server) handleCommand(conn net.Conn, rawCmd []byte) {
 
 	switch msg.Cmd {
 	case CMDSet:
-		if err := s.handleSetCommand(conn, msg); err != nil {
-			log.Println("something went wrong while handling the SET command: ", msg)
-			return
-		}
+		err = s.handleSetCommand(conn, msg)
 	case CMDGet: 
-		value, err := s.handleGetCommand(conn, msg)
-		if err != nil {
-			log.Println("something went wrong while handling the GET command: ", msg)
-			return
-		}
-		fmt.Println(string(value))
+		err = s.handleGetCommand(conn, msg)
 	case CMDHas:
-		ok := s.handleHasCommand(conn, msg)
-		if !ok {
-			log.Println("Did not have key")
-		}else{
-			log.Println("has key")
-		}
+		err = s.handleHasCommand(conn, msg)
 	case CMDDel:
-		s.handleDelCommand(conn, msg)
+		err = s.handleDelCommand(conn, msg)
 	default:
-		log.Println("unknown command")
-		return
+		err = errors.New("unknown command")
 	}
 
-	go func() {
-		if err := s.sendToFollowers(context.TODO(), msg); err != nil {
-			log.Println("error sending to followers")
-		}
-	}()
+	if err != nil {
+		log.Println(err.Error())
+		s.writeError(conn, err)
+	}else if msg.Cmd == CMDSet || msg.Cmd == CMDDel {
+		go func() {
+			if err := s.sendToFollowers(context.TODO(), msg); err != nil {
+				log.Println("error sending to followers")
+			}
+		}()
+	}
 }
 
 func (s *Server) handleSetCommand(conn net.Conn, msg *Message) error {
 	return s.cacher.Set(msg.Key, msg.Value, msg.Ttl);
 }
 
-func (s *Server) handleGetCommand(conn net.Conn, msg *Message) ([]byte, error) {
-	return s.cacher.Get(msg.Key);
+func (s *Server) handleGetCommand(conn net.Conn, msg *Message) error {
+	val, err := s.cacher.Get(msg.Key);
+	if err != nil {
+		return err
+	}
+
+	_, _ = conn.Write(val)
+
+	return nil
 }
 
-func (s *Server) handleHasCommand(conn net.Conn, msg *Message) bool {
-	return s.cacher.Has(msg.Key);
+func (s *Server) handleHasCommand(conn net.Conn, msg *Message) error {
+	ok := s.cacher.Has(msg.Key);
+	if ok {
+		_, _ = conn.Write([]byte("ok"))
+	}
+
+	return nil
 }
 
-func (s *Server) handleDelCommand(conn net.Conn, msg *Message) {
+func (s *Server) handleDelCommand(conn net.Conn, msg *Message) error {
 	s.cacher.Delete(msg.Key);
+
+	return nil
 }
 
 func (s *Server) sendToFollowers(ctx context.Context, msg *Message) error {
+	for conn := range s.followers {
+		_, err := conn.Write(msg.ToBytes())
+		if err != nil {
+			log.Println("error writing to follower", err.Error())
+			continue
+		}
+	}
 	return nil
+}
+
+func (s *Server) writeError(conn net.Conn, err error) {
+	log.Println(err.Error())
+	_, _ = conn.Write([]byte(err.Error()))
 }

@@ -10,3 +10,6 @@ build: tidy test
 
 run: build
 	./bin/cacheengine
+
+runfollower: build
+	./bin/cacheengine --listenaddr :4000 --leaderaddr :3000
