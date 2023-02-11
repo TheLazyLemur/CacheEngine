@@ -55,6 +55,21 @@ func (c *CommandGet) Bytes() []byte {
 	return buf.Bytes()
 }
 
+type CommandDel struct {
+	Key []byte
+}
+
+func (c *CommandDel) Bytes() []byte {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, CmdDel)
+
+	keyLen := int32(len(c.Key))
+	binary.Write(buf, binary.LittleEndian, keyLen)
+	binary.Write(buf, binary.LittleEndian, c.Key)
+
+	return buf.Bytes()
+}
+
 func ParseCommand(r io.Reader) any {
 	var cmd Command
 	binary.Read(r, binary.LittleEndian, &cmd)
@@ -64,6 +79,8 @@ func ParseCommand(r io.Reader) any {
 		return parseSetCommand(r)
 	case CmdGet:	
 		return parseGetCommand(r)
+	case CmdDel:	
+		return parseDelCommand(r)
 	default:
 		panic(fmt.Sprintf("Unknown command: %d", cmd))
 	}
@@ -91,6 +108,17 @@ func parseSetCommand(r io.Reader) *CommandSet {
 
 func parseGetCommand(r io.Reader) *CommandGet {
 	cmd := &CommandGet{}
+
+	var keyLen int32
+	binary.Read(r, binary.LittleEndian, &keyLen)
+	cmd.Key = make([]byte, keyLen)
+	binary.Read(r, binary.LittleEndian, &cmd.Key)
+
+	return cmd
+}
+
+func parseDelCommand(r io.Reader) *CommandDel {
+	cmd := &CommandDel{}
 
 	var keyLen int32
 	binary.Read(r, binary.LittleEndian, &keyLen)
