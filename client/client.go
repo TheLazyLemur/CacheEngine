@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/thelazylemur/cacheengine/protocol"
@@ -27,7 +28,7 @@ func New(url string, opt Options) (*Client, error) {
 	return	c, nil
 }
 
-func (c *Client) Set(ctx context.Context, key, value []byte, ttl int) (any, error) {
+func (c *Client) Set(ctx context.Context, key, value []byte, ttl int) error {
 	cmd := &protocol.CommandSet{
 		Key: key,
 		Value: value,
@@ -36,13 +37,22 @@ func (c *Client) Set(ctx context.Context, key, value []byte, ttl int) (any, erro
 
 	_, err := c.conn.Write(cmd.Bytes())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return nil, nil
+	resp, err :=  protocol.ParseSetReponse(c.conn)
+	if err != nil {
+		return err
+	}
+	
+	if resp.Status != protocol.StatusOK {
+		return fmt.Errorf("server response with a non ok status: %s", resp.Status)
+	}
+
+	return nil
 }
 
-func (c *Client) Get(ctx context.Context, key []byte) (any, error) {
+func (c *Client) Get(ctx context.Context, key []byte) ([]byte, error) {
 	cmd := &protocol.CommandGet{
 		Key: key,
 	}
@@ -52,7 +62,33 @@ func (c *Client) Get(ctx context.Context, key []byte) (any, error) {
 		return nil, err
 	}
 
-	return nil, nil
+	resp, err :=  protocol.ParseGetReponse(c.conn)
+	if err != nil {
+		return nil, err
+	}
+	
+	if resp.Status == protocol.StatusKeyNotFound {
+		return nil, fmt.Errorf("could not find key %s", key)
+	}
+
+	if resp.Status != protocol.StatusOK {
+		return nil, fmt.Errorf("server response with a non ok status: %s", resp.Status)
+	}
+
+	return resp.Value, nil
+}
+
+func (c *Client) Delete(ctx context.Context, key []byte) error {
+	cmd := &protocol.CommandDel{
+		Key: key,
+	}
+
+	_, err := c.conn.Write(cmd.Bytes())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Client) Close() error {

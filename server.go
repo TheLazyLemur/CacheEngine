@@ -70,7 +70,7 @@ func (s *Server) handleConn(conn net.Conn) {
 		}	
 	}()
 
-	fmt.Printf("new connection from [%s]\n", conn.RemoteAddr())
+	// fmt.Printf("new connection from [%s]\n", conn.RemoteAddr())
 
 	for {
 		cmd, err := protocol.ParseCommand(conn)
@@ -86,7 +86,7 @@ func (s *Server) handleConn(conn net.Conn) {
 		go s.handleCommand(conn, cmd)
 	}
 
-fmt.Println("connection closed")
+	// fmt.Println("connection closed")
 }
 
 func (s *Server) handleCommand(conn net.Conn, cmd any) {
@@ -94,23 +94,51 @@ func (s *Server) handleCommand(conn net.Conn, cmd any) {
 	case *protocol.CommandSet:
 		_ = s.handleSetCommand(conn, v)
 	case *protocol.CommandGet:
-		_, _ = s.handleGetCommand(conn, v)
+		_ = s.handleGetCommand(conn, v)
 	case *protocol.CommandDel:
 		s.handleDelCommand(conn, v)
 	}
 }
 
 func (s *Server) handleSetCommand (conn net.Conn, cmd *protocol.CommandSet) error {
-	log.Printf("set %s to %s\n", cmd.Key, cmd.Value)
-	return s.cacher.Set(cmd.Key, cmd.Value, int64(cmd.TTL))
+	// log.Printf("SET %s to %s\n", cmd.Key, cmd.Value)
+
+	resp := protocol.ResponseSet{}
+	if err := s.cacher.Set(cmd.Key, cmd.Value, int64(cmd.TTL)); err != nil {
+		resp.Status = protocol.StatusError
+		_, _ = conn.Write(resp.Bytes())
+		return err
+	}
+
+	resp.Status = protocol.StatusOK
+	_, _ = conn.Write(resp.Bytes())
+	return nil
 }
 
-func (s *Server) handleGetCommand (conn net.Conn, cmd *protocol.CommandGet) ([]byte, error){
-	log.Printf("get %s\n", cmd.Key)
-	return s.cacher.Get(cmd.Key)
+func (s *Server) handleGetCommand (conn net.Conn, cmd *protocol.CommandGet) error {
+	// log.Printf("GET %s\n", cmd.Key)
+
+	resp := protocol.ResponseGet{}
+	value, err := s.cacher.Get(cmd.Key)
+	if err != nil {
+		resp.Status = protocol.StatusKeyNotFound
+		_, _ = conn.Write(resp.Bytes())
+		return err
+	}
+
+	resp.Status = protocol.StatusOK
+	resp.Value = value
+
+	_, err = conn.Write(resp.Bytes())
+
+	return err
 }
 
 func (s *Server) handleDelCommand (conn net.Conn, cmd *protocol.CommandDel){
-	log.Printf("del %s\n", cmd.Key)
+	// log.Printf("DEL %s\n", cmd.Key)
 	s.cacher.Delete(cmd.Key)
+}
+
+func reponseToClient(conn net.Conn, msg any) error {
+	return nil
 }

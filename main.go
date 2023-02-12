@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"time"
 
@@ -25,18 +26,8 @@ func main(){
 
 	go func (){
 		time.Sleep(time.Second * 2)
-		client, err := client.New(":3000", client.Options{})
-		if err != nil {
-			log.Fatal(err)
-		}
+		testClient()
 
-		for i := 0; i < 1; i++ {
-			sendCommand(client)
-			time.Sleep(time.Millisecond * 100)
-		}
-
-		client.Close()
-		time.Sleep(time.Second * 1)
 	}()
 
 	server := NewServer(opts, cache.New())
@@ -45,16 +36,38 @@ func main(){
 	}
 }
 
-func sendCommand(client *client.Client){
-	_, err := client.Set(context.Background(), []byte("Dan"), []byte("Goat"), 0)
-	if err != nil {
-		log.Fatal(err)
-	}
+func testClient(){
+	for i := 0; i <= 10; i++ {
+		go func(i int){
+			var (
+				key = []byte(fmt.Sprintf("key_%d", i))
+				val = []byte(fmt.Sprintf("val_%d", i))
+			)
+			client, err := client.New(":3000", client.Options{})
+			defer client.Close()
 
-	time.Sleep(time.Millisecond * 100)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-	client.Get(context.Background(), []byte("Dan"))
-	if err != nil {
-		log.Fatal(err)
+			err = client.Set(context.Background(), key, val, 0)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// err = client.Delete(context.Background(), key)
+			// if err != nil {
+			// 	log.Fatal(err)
+			// }
+
+			time.Sleep(time.Second * 2)
+
+			resp, err := client.Get(context.Background(), key)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println(string(resp))
+		}(i)
 	}
 }
