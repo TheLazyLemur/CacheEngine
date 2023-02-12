@@ -134,9 +134,21 @@ func (s *Server) handleGetCommand (conn net.Conn, cmd *protocol.CommandGet) erro
 	return err
 }
 
-func (s *Server) handleDelCommand (conn net.Conn, cmd *protocol.CommandDel){
+func (s *Server) handleDelCommand (conn net.Conn, cmd *protocol.CommandDel) error {
 	// log.Printf("DEL %s\n", cmd.Key)
-	s.cacher.Delete(cmd.Key)
+	resp := protocol.ResponseDelete{}
+	err := s.cacher.Delete(cmd.Key)
+	if err != nil {
+		resp.Status = protocol.StatusError
+		_, _ = conn.Write(resp.Bytes())
+		return err
+	}
+
+	resp.Status = protocol.StatusOK
+
+	_, err = conn.Write(resp.Bytes())
+
+	return err
 }
 
 func reponseToClient(conn net.Conn, msg any) error {

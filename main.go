@@ -55,13 +55,11 @@ func testClient(){
 				log.Fatal(err)
 			}
 
-			// err = client.Delete(context.Background(), key)
-			// if err != nil {
-			// 	log.Fatal(err)
-			// }
-
-			time.Sleep(time.Second * 2)
-
+			err = client.Delete(context.Background(), key)
+			if err != nil {
+				log.Fatal(err)
+			}
+			
 			resp, err := client.Get(context.Background(), key)
 			if err != nil {
 				log.Fatal(err)

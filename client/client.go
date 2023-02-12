@@ -88,6 +88,17 @@ func (c *Client) Delete(ctx context.Context, key []byte) error {
 		return err
 	}
 
+	resp, err :=  protocol.ParseDelReponse(c.conn)
+	if err != nil {
+		return err
+	}
+
+	if resp.Status != protocol.StatusOK {
+		return fmt.Errorf("server response with a non ok status: %s", resp.Status)
+	}
+
+	fmt.Println(resp.Status)
+
 	return nil
 }
 

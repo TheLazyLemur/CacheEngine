@@ -18,13 +18,14 @@ func New() *Cache{
 	}
 }
 
-func (c *Cache) Delete(key []byte) {
+func (c *Cache) Delete(key []byte) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	k := string(key)
 
 	delete(c.data, k)
+	return nil
 }
 
 func (c *Cache) Has(key []byte) bool {
