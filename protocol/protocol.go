@@ -1,4 +1,4 @@
-package main
+package protocol
 
 import (
 	"bytes"
@@ -70,19 +70,21 @@ func (c *CommandDel) Bytes() []byte {
 	return buf.Bytes()
 }
 
-func ParseCommand(r io.Reader) any {
+func ParseCommand(r io.Reader) (any, error) {
 	var cmd Command
-	binary.Read(r, binary.LittleEndian, &cmd)
+	if err := binary.Read(r, binary.LittleEndian, &cmd); err != nil {
+		return nil, err
+	}
 
 	switch cmd {
 	case CmdSet:	
-		return parseSetCommand(r)
+		return parseSetCommand(r), nil
 	case CmdGet:	
-		return parseGetCommand(r)
+		return parseGetCommand(r), nil
 	case CmdDel:	
-		return parseDelCommand(r)
+		return parseDelCommand(r), nil
 	default:
-		panic(fmt.Sprintf("Unknown command: %d", cmd))
+		return nil, fmt.Errorf("unknown command: %d", cmd)
 	}
 }
 
@@ -90,17 +92,17 @@ func parseSetCommand(r io.Reader) *CommandSet {
 	cmd := &CommandSet{}
 
 	var keyLen int32
-	binary.Read(r, binary.LittleEndian, &keyLen)
+	_ = binary.Read(r, binary.LittleEndian, &keyLen)
 	cmd.Key = make([]byte, keyLen)
-	binary.Read(r, binary.LittleEndian, &cmd.Key)
+	_ = binary.Read(r, binary.LittleEndian, &cmd.Key)
 
 	var valueLen int32
-	binary.Read(r, binary.LittleEndian, &valueLen)
+	_ = binary.Read(r, binary.LittleEndian, &valueLen)
 	cmd.Value = make([]byte, valueLen)
-	binary.Read(r, binary.LittleEndian, &cmd.Value)
+	_ = binary.Read(r, binary.LittleEndian, &cmd.Value)
 
 	var ttl int32
-	binary.Read(r, binary.LittleEndian, &ttl)
+	_ = binary.Read(r, binary.LittleEndian, &ttl)
 	cmd.TTL = int(ttl)
 
 	return cmd
@@ -110,9 +112,9 @@ func parseGetCommand(r io.Reader) *CommandGet {
 	cmd := &CommandGet{}
 
 	var keyLen int32
-	binary.Read(r, binary.LittleEndian, &keyLen)
+	_ = binary.Read(r, binary.LittleEndian, &keyLen)
 	cmd.Key = make([]byte, keyLen)
-	binary.Read(r, binary.LittleEndian, &cmd.Key)
+	_ = binary.Read(r, binary.LittleEndian, &cmd.Key)
 
 	return cmd
 }
@@ -121,9 +123,9 @@ func parseDelCommand(r io.Reader) *CommandDel {
 	cmd := &CommandDel{}
 
 	var keyLen int32
-	binary.Read(r, binary.LittleEndian, &keyLen)
+	_ = binary.Read(r, binary.LittleEndian, &keyLen)
 	cmd.Key = make([]byte, keyLen)
-	binary.Read(r, binary.LittleEndian, &cmd.Key)
+	_ = binary.Read(r, binary.LittleEndian, &cmd.Key)
 
 	return cmd
 }

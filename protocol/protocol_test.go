@@ -1,4 +1,4 @@
-package main
+package protocol
 
 import (
 	"bytes"
@@ -15,7 +15,8 @@ func TestParseSetCommand(t *testing.T) {
 	}
 
 	r := bytes.NewReader(cmd.Bytes())
-	pcmd := ParseCommand(r)
+	pcmd, err := ParseCommand(r)
+	assert.Nil(t, err)
 
 	assert.Equal(t, cmd, pcmd)
 }
@@ -26,7 +27,8 @@ func TestParseGetCommand(t *testing.T) {
 	}
 
 	r := bytes.NewReader(cmd.Bytes())
-	pcmd := ParseCommand(r)
+	pcmd, err := ParseCommand(r)
+	assert.Nil(t, err)
 
 	assert.Equal(t, cmd, pcmd)
 }
@@ -37,7 +39,22 @@ func TestParseDelCommand(t *testing.T) {
 	}
 
 	r := bytes.NewReader(cmd.Bytes())
-	pcmd := ParseCommand(r)
+	pcmd, err := ParseCommand(r)
+	assert.Nil(t, err)
 
 	assert.Equal(t, cmd, pcmd)
+}
+
+func BenchmarkParseCommand(b *testing.B) {
+	cmd := &CommandSet{
+		Key: []byte("Foo"),
+		Value: []byte("Bar"),
+		TTL: 2,
+	}
+
+	for i := 0; i < b.N; i++ {
+		r := bytes.NewReader(cmd.Bytes())
+		_, err := ParseCommand(r)
+		assert.Nil(b, err)
+	}
 }
