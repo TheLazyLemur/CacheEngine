@@ -97,8 +97,6 @@ func (c *Client) Delete(ctx context.Context, key []byte) error {
 		return fmt.Errorf("server response with a non ok status: %s", resp.Status)
 	}
 
-	fmt.Println(resp.Status)
-
 	return nil
 }
 

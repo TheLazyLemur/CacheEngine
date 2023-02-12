@@ -58,7 +58,7 @@ func (c *Cache) Set(key, value []byte, ttl int64) error {
 	if ttl > 0 {
 		go func(){
 			<-time.After(time.Duration(ttl))
-			c.Delete(key)
+			_ = c.Delete(key)
 		}()
 	}
 

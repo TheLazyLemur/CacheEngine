@@ -96,7 +96,7 @@ func (s *Server) handleCommand(conn net.Conn, cmd any) {
 	case *protocol.CommandGet:
 		_ = s.handleGetCommand(conn, v)
 	case *protocol.CommandDel:
-		s.handleDelCommand(conn, v)
+		_ = s.handleDelCommand(conn, v)
 	}
 }
 
@@ -149,8 +149,4 @@ func (s *Server) handleDelCommand (conn net.Conn, cmd *protocol.CommandDel) erro
 	_, err = conn.Write(resp.Bytes())
 
 	return err
-}
-
-func reponseToClient(conn net.Conn, msg any) error {
-	return nil
 }

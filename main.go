@@ -44,7 +44,6 @@ func testClient(){
 				val = []byte(fmt.Sprintf("val_%d", i))
 			)
 			client, err := client.New(":3000", client.Options{})
-			defer client.Close()
 
 			if err != nil {
 				log.Fatal(err)
@@ -66,6 +65,8 @@ func testClient(){
 			}
 
 			fmt.Println(string(resp))
+
+			client.Close()
 		}(i)
 	}
 }
