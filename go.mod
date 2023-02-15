@@ -1,4 +1,4 @@
-module github.com/thelazylemur/cacheengine
+module github.com/TheLazyLemur/cacheengine
 
 go 1.19
 

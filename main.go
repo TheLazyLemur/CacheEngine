@@ -7,8 +7,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/thelazylemur/cacheengine/cache"
-	"github.com/thelazylemur/cacheengine/client"
+	"github.com/TheLazyLemur/cacheengine/cache"
+	"github.com/TheLazyLemur/cacheengine/client"
 )
 
 func main(){

@@ -6,8 +6,8 @@ import (
 	"log"
 	"net"
 
-	"github.com/thelazylemur/cacheengine/cache"
-	"github.com/thelazylemur/cacheengine/protocol"
+	"github.com/TheLazyLemur/cacheengine/cache"
+	"github.com/TheLazyLemur/cacheengine/protocol"
 )
 
 type ServerOpts struct {

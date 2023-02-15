@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/thelazylemur/cacheengine/protocol"
+	"github.com/TheLazyLemur/cacheengine/protocol"
 )
 
 type Options struct {
