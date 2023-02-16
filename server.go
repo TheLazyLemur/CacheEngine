@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
 
 	"github.com/TheLazyLemur/cacheengine/cache"
 	"github.com/TheLazyLemur/cacheengine/protocol"
@@ -20,6 +21,7 @@ type Server struct {
 	ServerOpts
 	followers map[net.Conn]struct{}
 	cacher cache.Cacher
+	m sync.Mutex
 }
 
 func NewServer(opts ServerOpts, c cache.Cacher) *Server {
@@ -28,6 +30,7 @@ func NewServer(opts ServerOpts, c cache.Cacher) *Server {
 		cacher: c,
 		//TODO: only allocate this as the leader
 		followers: make(map[net.Conn]struct{}),
+		m:         sync.Mutex{},
 	}
 }
 
@@ -97,12 +100,15 @@ func (s *Server) handleCommand(conn net.Conn, cmd any) {
 		_ = s.handleGetCommand(conn, v)
 	case *protocol.CommandDel:
 		_ = s.handleDelCommand(conn, v)
+	case *protocol.CommandJoin:
+		_ = s.handleJoinCommand(conn, v)
+	default:
+	        fmt.Println("default")
 	}
 }
 
 func (s *Server) handleSetCommand (conn net.Conn, cmd *protocol.CommandSet) error {
-	// log.Printf("SET %s to %s\n", cmd.Key, cmd.Value)
-
+	// log.Printf("SET %s to %s with ttl of %d\n", cmd.Key, cmd.Value, cmd.TTL)
 	resp := protocol.ResponseSet{}
 	if err := s.cacher.Set(cmd.Key, cmd.Value, int64(cmd.TTL)); err != nil {
 		resp.Status = protocol.StatusError
@@ -111,13 +117,14 @@ func (s *Server) handleSetCommand (conn net.Conn, cmd *protocol.CommandSet) erro
 	}
 
 	resp.Status = protocol.StatusOK
+
 	_, _ = conn.Write(resp.Bytes())
+
 	return nil
 }
 
 func (s *Server) handleGetCommand (conn net.Conn, cmd *protocol.CommandGet) error {
 	// log.Printf("GET %s\n", cmd.Key)
-
 	resp := protocol.ResponseGet{}
 	value, err := s.cacher.Get(cmd.Key)
 	if err != nil {
@@ -149,4 +156,12 @@ func (s *Server) handleDelCommand (conn net.Conn, cmd *protocol.CommandDel) erro
 	_, err = conn.Write(resp.Bytes())
 
 	return err
+}
+
+func (s *Server) handleJoinCommand (conn net.Conn, cmd *protocol.CommandJoin) error {
+	s.m.Lock()
+	defer s.m.Unlock()
+	log.Printf("JOIN %s\n", conn.RemoteAddr())
+	s.followers[conn] = struct{}{}
+	return nil
 }

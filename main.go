@@ -7,6 +7,8 @@ import (
 	"log"
 	"time"
 
+	// "time"
+
 	"github.com/TheLazyLemur/cacheengine/cache"
 	"github.com/TheLazyLemur/cacheengine/client"
 )
@@ -26,7 +28,7 @@ func main(){
 
 	go func (){
 		time.Sleep(time.Second * 2)
-		testClient()
+		// testClient()
 
 	}()
 
@@ -37,17 +39,24 @@ func main(){
 }
 
 func testClient(){
-	for i := 0; i <= 10; i++ {
-		go func(i int){
-			var (
-				key = []byte(fmt.Sprintf("key_%d", i))
-				val = []byte(fmt.Sprintf("val_%d", i))
-			)
 			client, err := client.New(":3000", client.Options{})
-
 			if err != nil {
 				log.Fatal(err)
 			}
+	for i := 0; i < 1; i++ {
+		go func(i int){
+			// var (
+			// 	key = []byte(fmt.Sprintf("key_%d", i))
+			// 	val = []byte(fmt.Sprintf("valasjdhakjsdhajksdhaksdhjkhwquieyqiyiyasdiu_%d", i))
+			// )
+			key := []byte("Foo")
+			key2 := []byte("Foo2")
+			val := []byte("Bar")
+
+
+			// if i % 3 == 0 {
+			// 	_ = client.Join(context.Background())
+			// }
 
 			err = client.Set(context.Background(), key, val, 0)
 			if err != nil {
@@ -58,13 +67,19 @@ func testClient(){
 			if err != nil {
 				log.Fatal(err)
 			}
-			
+
 			resp, err := client.Get(context.Background(), key)
+			if err != nil {
+				log.Println("key not found")
+			}else{
+				fmt.Println(string(resp))
+			}
+
+			err = client.Set(context.Background(), key2, val, 0)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			fmt.Println(string(resp))
 
 			client.Close()
 		}(i)

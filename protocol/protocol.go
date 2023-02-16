@@ -15,7 +15,16 @@ const(
 	CmdSet
 	CmdGet
 	CmdDel
+	CmdJoin
 )
+
+type CommandJoin struct {}
+func (c *CommandJoin) Bytes() []byte {
+	buf := new(bytes.Buffer)
+	_ = binary.Write(buf, binary.LittleEndian, CmdJoin)
+
+	return buf.Bytes()
+}
 
 type CommandSet struct {
 	Key []byte
@@ -83,6 +92,8 @@ func ParseCommand(r io.Reader) (any, error) {
 		return parseGetCommand(r), nil
 	case CmdDel:	
 		return parseDelCommand(r), nil
+	case CmdJoin:	
+		return parseJoinCommand(r), nil
 	default:
 		return nil, fmt.Errorf("unknown command: %d", cmd)
 	}
@@ -127,5 +138,10 @@ func parseDelCommand(r io.Reader) *CommandDel {
 	cmd.Key = make([]byte, keyLen)
 	_ = binary.Read(r, binary.LittleEndian, &cmd.Key)
 
+	return cmd
+}
+
+func parseJoinCommand(r io.Reader) *CommandJoin {
+	cmd := &CommandJoin{}
 	return cmd
 }

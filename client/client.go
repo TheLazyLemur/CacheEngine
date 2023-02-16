@@ -100,6 +100,16 @@ func (c *Client) Delete(ctx context.Context, key []byte) error {
 	return nil
 }
 
+func (c *Client) Join(ctx context.Context) error {
+	cmd := &protocol.CommandJoin{}
+
+	_, err := c.conn.Write(cmd.Bytes())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Client) Close() error {
 	return c.conn.Close()
 }
