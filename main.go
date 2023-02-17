@@ -26,7 +26,11 @@ func main(){
 		LeaderAddr: *leaderAddr,
 	}
 
-	api := NewApiServer(":8080", c)
+	apiOpts := ApiServerOpts {
+		ListenAddr: ":8080",
+	}
+
+	api := NewApiServer(apiOpts, c)
 
 	go func (){
 		time.Sleep(time.Second * 2)

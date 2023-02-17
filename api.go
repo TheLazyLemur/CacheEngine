@@ -9,29 +9,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type ApiServer struct {
-	listenAddr string
-	cache      cache.Cacher
-}
-
-func NewApiServer(listenAddr string, cache cache.Cacher) *ApiServer {
-	return &ApiServer{
-		listenAddr: listenAddr,
-		cache:      cache,
-	}
-}
-
-func (s *ApiServer) Run() {
-	router := mux.NewRouter()
-
-	router.HandleFunc("/set", s.SetValue)
-	router.HandleFunc("/get", s.GetValue)
-	router.HandleFunc("/delete", s.DeleteValue)
-
-	log.Println("Server running on port", s.listenAddr)
-	log.Fatal(http.ListenAndServe(s.listenAddr, router))
-}
-
 type SetRequest struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -50,6 +27,33 @@ type DeleteRequest struct {
 	Key   string `json:"key"`
 }
 
+type ApiServerOpts struct {
+	ListenAddr string
+}
+
+type ApiServer struct {
+	ApiServerOpts
+	cacher      cache.Cacher
+}
+
+func NewApiServer(apiServerOpts ApiServerOpts, cache cache.Cacher) *ApiServer {
+	return &ApiServer{
+		ApiServerOpts: apiServerOpts,
+		cacher:      cache,
+	}
+}
+
+func (s *ApiServer) Run() {
+	router := mux.NewRouter()
+
+	router.HandleFunc("/set", s.SetValue)
+	router.HandleFunc("/get", s.GetValue)
+	router.HandleFunc("/delete", s.DeleteValue)
+
+	log.Printf("server starting on port [%s]\n", s.ListenAddr)
+	log.Fatal(http.ListenAndServe(s.ListenAddr, router))
+}
+
 func (s *ApiServer) SetValue(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -62,7 +66,7 @@ func (s *ApiServer) SetValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.cache.Set([]byte(req.Key), []byte(req.Value), req.Ttl); err != nil {
+	if err := s.cacher.Set([]byte(req.Key), []byte(req.Value), req.Ttl); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -83,7 +87,7 @@ func (s *ApiServer) GetValue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := new(GetResonse)
-	value, err := s.cache.Get([]byte(req.Key))
+	value, err := s.cacher.Get([]byte(req.Key))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -108,7 +112,7 @@ func (s *ApiServer) DeleteValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.cache.Delete([]byte(req.Key)); err != nil {
+	if err := s.cacher.Delete([]byte(req.Key)); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
