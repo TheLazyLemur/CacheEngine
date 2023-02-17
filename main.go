@@ -7,8 +7,6 @@ import (
 	"log"
 	"time"
 
-	// "time"
-
 	"github.com/TheLazyLemur/cacheengine/cache"
 	"github.com/TheLazyLemur/cacheengine/client"
 )
@@ -19,6 +17,8 @@ func main(){
 		leaderAddr = flag.String("leaderaddr", "", "listen address of the leader node")
 	)
 	flag.Parse()
+	
+	c := cache.New()
 
 	opts := ServerOpts {
 		ListenAddr: *listenAddr,
@@ -26,44 +26,34 @@ func main(){
 		LeaderAddr: *leaderAddr,
 	}
 
+	api := NewApiServer(":8080", c)
+
 	go func (){
 		time.Sleep(time.Second * 2)
-		// testClient()
+		testClient()
 
 	}()
 
-	server := NewServer(opts, cache.New())
+	go api.Run()
+	server := NewServer(opts, c)
 	if err := server.Start(); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func testClient(){
-			client, err := client.New(":3000", client.Options{})
-			if err != nil {
-				log.Fatal(err)
-			}
+	client, err := client.New(":3000", client.Options{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for i := 0; i < 1; i++ {
 		go func(i int){
-			// var (
-			// 	key = []byte(fmt.Sprintf("key_%d", i))
-			// 	val = []byte(fmt.Sprintf("valasjdhakjsdhajksdhaksdhjkhwquieyqiyiyasdiu_%d", i))
-			// )
 			key := []byte("Foo")
 			key2 := []byte("Foo2")
 			val := []byte("Bar")
 
-
-			// if i % 3 == 0 {
-			// 	_ = client.Join(context.Background())
-			// }
-
 			err = client.Set(context.Background(), key, val, 0)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			err = client.Delete(context.Background(), key)
 			if err != nil {
 				log.Fatal(err)
 			}
