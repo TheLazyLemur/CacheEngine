@@ -13,12 +13,18 @@ import (
 
 func main(){
 	var (
+		apiAddr = flag.String("apiaddr", ":8080", "listen address of the api")
 		listenAddr = flag.String("listenaddr", ":3000", "listen address of the server")
 		leaderAddr = flag.String("leaderaddr", "", "listen address of the leader node")
 	)
 	flag.Parse()
 	
-	c := cache.New()
+
+	go func (){
+		time.Sleep(time.Second * 2)
+		testClient()
+
+	}()
 
 	opts := ServerOpts {
 		ListenAddr: *listenAddr,
@@ -27,18 +33,14 @@ func main(){
 	}
 
 	apiOpts := ApiServerOpts {
-		ListenAddr: ":8080",
+		ListenAddr: *apiAddr,
 	}
 
+	c := cache.New()
+
 	api := NewApiServer(apiOpts, c)
-
-	go func (){
-		time.Sleep(time.Second * 2)
-		testClient()
-
-	}()
-
 	go api.Run()
+
 	server := NewServer(opts, c)
 	if err := server.Start(); err != nil {
 		log.Fatal(err)
