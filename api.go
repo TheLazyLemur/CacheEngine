@@ -89,7 +89,7 @@ func (s *ApiServer) GetValue(w http.ResponseWriter, r *http.Request) {
 	resp := new(GetResonse)
 	value, err := s.cacher.Get([]byte(req.Key))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
