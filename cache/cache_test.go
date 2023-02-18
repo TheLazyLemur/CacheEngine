@@ -14,7 +14,7 @@ func getNewCache(t *testing.T) *Cache {
 	return c
 }
 
-func getTestValues() ([]byte, []byte, int64){
+func getTestValues() ([]byte, []byte, int64) {
 	key := []byte("test_key")
 	value := []byte("test_val")
 	ttl := 1000

@@ -6,7 +6,6 @@ import (
 	"io"
 )
 
-
 type Status byte
 
 func (s Status) String() string {
@@ -32,20 +31,22 @@ const (
 type ResponseDelete struct {
 	Status
 }
+
 func (r *ResponseDelete) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, r.Status)
-	
+
 	return buf.Bytes()
 }
 
 type ResponseSet struct {
 	Status Status
 }
+
 func (r *ResponseSet) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, r.Status)
-	
+
 	return buf.Bytes()
 }
 
@@ -53,10 +54,11 @@ type ResponseGet struct {
 	Status
 	Value []byte
 }
+
 func (r *ResponseGet) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, r.Status)
-	
+
 	valueLen := int32(len(r.Value))
 	_ = binary.Write(buf, binary.LittleEndian, valueLen)
 	_ = binary.Write(buf, binary.LittleEndian, r.Value)
@@ -88,4 +90,3 @@ func ParseGetReponse(r io.Reader) (*ResponseGet, error) {
 
 	return resp, nil
 }
-

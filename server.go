@@ -13,21 +13,21 @@ import (
 
 type ServerOpts struct {
 	ListenAddr string
-	IsLeader bool
+	IsLeader   bool
 	LeaderAddr string
 }
 
 type Server struct {
 	ServerOpts
 	followers map[net.Conn]struct{}
-	cacher cache.Cacher
-	m sync.Mutex
+	cacher    cache.Cacher
+	m         sync.Mutex
 }
 
 func NewServer(opts ServerOpts, c cache.Cacher) *Server {
 	return &Server{
 		ServerOpts: opts,
-		cacher: c,
+		cacher:     c,
 		//TODO: only allocate this as the leader
 		followers: make(map[net.Conn]struct{}),
 		m:         sync.Mutex{},
@@ -70,7 +70,7 @@ func (s *Server) handleConn(conn net.Conn) {
 	defer func() {
 		if err := conn.Close(); err != nil {
 			log.Printf("close error: %s\n", err)
-		}	
+		}
 	}()
 
 	// fmt.Printf("new connection from [%s]\n", conn.RemoteAddr())
@@ -103,11 +103,11 @@ func (s *Server) handleCommand(conn net.Conn, cmd any) {
 	case *protocol.CommandJoin:
 		_ = s.handleJoinCommand(conn, v)
 	default:
-	        fmt.Println("default")
+		fmt.Println("default")
 	}
 }
 
-func (s *Server) handleSetCommand (conn net.Conn, cmd *protocol.CommandSet) error {
+func (s *Server) handleSetCommand(conn net.Conn, cmd *protocol.CommandSet) error {
 	// log.Printf("SET %s to %s with ttl of %d\n", cmd.Key, cmd.Value, cmd.TTL)
 	resp := protocol.ResponseSet{}
 	if err := s.cacher.Set(cmd.Key, cmd.Value, int64(cmd.TTL)); err != nil {
@@ -123,7 +123,7 @@ func (s *Server) handleSetCommand (conn net.Conn, cmd *protocol.CommandSet) erro
 	return nil
 }
 
-func (s *Server) handleGetCommand (conn net.Conn, cmd *protocol.CommandGet) error {
+func (s *Server) handleGetCommand(conn net.Conn, cmd *protocol.CommandGet) error {
 	// log.Printf("GET %s\n", cmd.Key)
 	resp := protocol.ResponseGet{}
 	value, err := s.cacher.Get(cmd.Key)
@@ -141,7 +141,7 @@ func (s *Server) handleGetCommand (conn net.Conn, cmd *protocol.CommandGet) erro
 	return err
 }
 
-func (s *Server) handleDelCommand (conn net.Conn, cmd *protocol.CommandDel) error {
+func (s *Server) handleDelCommand(conn net.Conn, cmd *protocol.CommandDel) error {
 	// log.Printf("DEL %s\n", cmd.Key)
 	resp := protocol.ResponseDelete{}
 	err := s.cacher.Delete(cmd.Key)
@@ -158,7 +158,7 @@ func (s *Server) handleDelCommand (conn net.Conn, cmd *protocol.CommandDel) erro
 	return err
 }
 
-func (s *Server) handleJoinCommand (conn net.Conn, cmd *protocol.CommandJoin) error {
+func (s *Server) handleJoinCommand(conn net.Conn, cmd *protocol.CommandJoin) error {
 	s.m.Lock()
 	defer s.m.Unlock()
 	log.Printf("JOIN %s\n", conn.RemoteAddr())

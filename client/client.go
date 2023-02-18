@@ -12,7 +12,7 @@ type Options struct {
 }
 
 type Client struct {
-	conn net.Conn	
+	conn net.Conn
 }
 
 func New(url string, opt Options) (*Client, error) {
@@ -25,14 +25,14 @@ func New(url string, opt Options) (*Client, error) {
 		conn: conn,
 	}
 
-	return	c, nil
+	return c, nil
 }
 
 func (c *Client) Set(ctx context.Context, key, value []byte, ttl int) error {
 	cmd := &protocol.CommandSet{
-		Key: key,
+		Key:   key,
 		Value: value,
-		TTL: ttl,
+		TTL:   ttl,
 	}
 
 	_, err := c.conn.Write(cmd.Bytes())
@@ -40,11 +40,11 @@ func (c *Client) Set(ctx context.Context, key, value []byte, ttl int) error {
 		return err
 	}
 
-	resp, err :=  protocol.ParseSetReponse(c.conn)
+	resp, err := protocol.ParseSetReponse(c.conn)
 	if err != nil {
 		return err
 	}
-	
+
 	if resp.Status != protocol.StatusOK {
 		return fmt.Errorf("server response with a non ok status: %s", resp.Status)
 	}
@@ -62,11 +62,11 @@ func (c *Client) Get(ctx context.Context, key []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	resp, err :=  protocol.ParseGetReponse(c.conn)
+	resp, err := protocol.ParseGetReponse(c.conn)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if resp.Status == protocol.StatusKeyNotFound {
 		return nil, fmt.Errorf("could not find key %s", key)
 	}
@@ -88,7 +88,7 @@ func (c *Client) Delete(ctx context.Context, key []byte) error {
 		return err
 	}
 
-	resp, err :=  protocol.ParseDelReponse(c.conn)
+	resp, err := protocol.ParseDelReponse(c.conn)
 	if err != nil {
 		return err
 	}

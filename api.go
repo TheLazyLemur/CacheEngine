@@ -16,15 +16,15 @@ type SetRequest struct {
 }
 
 type GetRequest struct {
-	Key   string `json:"key"`
+	Key string `json:"key"`
 }
 
 type GetResonse struct {
-	Value   string `json:"value"`
+	Value string `json:"value"`
 }
 
 type DeleteRequest struct {
-	Key   string `json:"key"`
+	Key string `json:"key"`
 }
 
 type ApiServerOpts struct {
@@ -33,13 +33,13 @@ type ApiServerOpts struct {
 
 type ApiServer struct {
 	ApiServerOpts
-	cacher      cache.Cacher
+	cacher cache.Cacher
 }
 
 func NewApiServer(apiServerOpts ApiServerOpts, cache cache.Cacher) *ApiServer {
 	return &ApiServer{
 		ApiServerOpts: apiServerOpts,
-		cacher:      cache,
+		cacher:        cache,
 	}
 }
 
@@ -97,7 +97,7 @@ func (s *ApiServer) GetValue(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	_ =  json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func (s *ApiServer) DeleteValue(w http.ResponseWriter, r *http.Request) {

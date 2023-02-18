@@ -7,10 +7,9 @@ import (
 	"io"
 )
 
-
 type Command byte
 
-const(
+const (
 	CMDNone Command = iota
 	CmdSet
 	CmdGet
@@ -18,7 +17,8 @@ const(
 	CmdJoin
 )
 
-type CommandJoin struct {}
+type CommandJoin struct{}
+
 func (c *CommandJoin) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, CmdJoin)
@@ -27,9 +27,9 @@ func (c *CommandJoin) Bytes() []byte {
 }
 
 type CommandSet struct {
-	Key []byte
+	Key   []byte
 	Value []byte
-	TTL int
+	TTL   int
 }
 
 func (c *CommandSet) Bytes() []byte {
@@ -86,13 +86,13 @@ func ParseCommand(r io.Reader) (any, error) {
 	}
 
 	switch cmd {
-	case CmdSet:	
+	case CmdSet:
 		return parseSetCommand(r), nil
-	case CmdGet:	
+	case CmdGet:
 		return parseGetCommand(r), nil
-	case CmdDel:	
+	case CmdDel:
 		return parseDelCommand(r), nil
-	case CmdJoin:	
+	case CmdJoin:
 		return parseJoinCommand(r), nil
 	default:
 		return nil, fmt.Errorf("unknown command: %d", cmd)

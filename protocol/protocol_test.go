@@ -9,9 +9,9 @@ import (
 
 func TestParseSetCommand(t *testing.T) {
 	cmd := &CommandSet{
-		Key: []byte("Foo"),
+		Key:   []byte("Foo"),
 		Value: []byte("Bar"),
-		TTL: 2,
+		TTL:   2,
 	}
 
 	r := bytes.NewReader(cmd.Bytes())
@@ -47,9 +47,9 @@ func TestParseDelCommand(t *testing.T) {
 
 func BenchmarkParseCommand(b *testing.B) {
 	cmd := &CommandSet{
-		Key: []byte("Foo"),
+		Key:   []byte("Foo"),
 		Value: []byte("Bar"),
-		TTL: 2,
+		TTL:   2,
 	}
 
 	for i := 0; i < b.N; i++ {

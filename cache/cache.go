@@ -7,13 +7,18 @@ import (
 	"time"
 )
 
+// TODO: Add database to backup cache
+// TODO: Restore cache from database on startup
+// TODO: Add a cache warmup
+// TODO: Sync cache with database when shutdown
+
 type Cache struct {
 	lock sync.RWMutex
 	data map[string][]byte
 }
 
-func New() *Cache{
-	return &Cache {
+func New() *Cache {
+	return &Cache{
 		data: make(map[string][]byte),
 	}
 }
@@ -25,6 +30,7 @@ func (c *Cache) Delete(key []byte) error {
 	k := string(key)
 
 	delete(c.data, k)
+	//TODO: Remove from database
 	return nil
 }
 
@@ -56,7 +62,8 @@ func (c *Cache) Set(key, value []byte, ttl int64) error {
 	defer c.lock.Unlock()
 
 	if ttl > 0 {
-		go func(){
+		go func() {
+			//TODO: Convert this to a go routine that runs separately and will clean up the cache after a specified time
 			<-time.After(time.Duration(ttl))
 			_ = c.Delete(key)
 		}()
@@ -69,6 +76,7 @@ func (c *Cache) Set(key, value []byte, ttl int64) error {
 	}
 
 	c.data[k] = value
+	//TODO: Store in database
 
 	return nil
 }

@@ -5,34 +5,32 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/TheLazyLemur/cacheengine/cache"
 	"github.com/TheLazyLemur/cacheengine/client"
 )
 
-func main(){
+func main() {
 	var (
-		apiAddr = flag.String("apiaddr", ":8080", "listen address of the api")
+		apiAddr    = flag.String("apiaddr", ":8080", "listen address of the api")
 		listenAddr = flag.String("listenaddr", ":3000", "listen address of the server")
 		leaderAddr = flag.String("leaderaddr", "", "listen address of the leader node")
 	)
 	flag.Parse()
-	
 
-	go func (){
-		time.Sleep(time.Second * 2)
-		testClient()
+	// go func (){
+	// 	time.Sleep(time.Second * 2)
+	// 	testClient()
+	//
+	// }()
 
-	}()
-
-	opts := ServerOpts {
+	opts := ServerOpts{
 		ListenAddr: *listenAddr,
-		IsLeader: len(*leaderAddr) == 0,
+		IsLeader:   len(*leaderAddr) == 0,
 		LeaderAddr: *leaderAddr,
 	}
 
-	apiOpts := ApiServerOpts {
+	apiOpts := ApiServerOpts{
 		ListenAddr: *apiAddr,
 	}
 
@@ -47,14 +45,14 @@ func main(){
 	}
 }
 
-func testClient(){
+func testClient() {
 	client, err := client.New(":3000", client.Options{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for i := 0; i < 1; i++ {
-		go func(i int){
+		go func(i int) {
 			key := []byte("Foo")
 			key2 := []byte("Foo2")
 			val := []byte("Bar")
@@ -67,7 +65,7 @@ func testClient(){
 			resp, err := client.Get(context.Background(), key)
 			if err != nil {
 				log.Println("key not found")
-			}else{
+			} else {
 				fmt.Println(string(resp))
 			}
 
@@ -75,7 +73,6 @@ func testClient(){
 			if err != nil {
 				log.Fatal(err)
 			}
-
 
 			client.Close()
 		}(i)
