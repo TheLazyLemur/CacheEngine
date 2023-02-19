@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 
 	"github.com/TheLazyLemur/cacheengine/cache"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -50,70 +52,85 @@ func (s *ApiServer) Run() {
 	router.HandleFunc("/get", s.GetValue)
 	router.HandleFunc("/delete", s.DeleteValue)
 
+	router.Use(loggingMiddleware)
+
 	log.Printf("server starting on port [%s]\n", s.ListenAddr)
 	log.Fatal(http.ListenAndServe(s.ListenAddr, router))
 }
 
+func WriteJson(w http.ResponseWriter, status int, v any) error {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(v)
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), "request_id", uuid.New().String())
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func (s *ApiServer) SetValue(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = WriteJson(w, http.StatusMethodNotAllowed, nil)
 		return
 	}
 
 	req := new(SetRequest)
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		_ = WriteJson(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := s.cacher.Set([]byte(req.Key), []byte(req.Value), req.Ttl); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		_ = WriteJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	_ = WriteJson(w, http.StatusCreated, nil)
 }
 
 func (s *ApiServer) GetValue(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = WriteJson(w, http.StatusMethodNotAllowed, nil)
 		return
 	}
 
 	req := new(GetRequest)
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		_ = WriteJson(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	resp := new(GetResonse)
 	value, err := s.cacher.Get([]byte(req.Key))
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
+		_ = WriteJson(w, http.StatusNotFound, err.Error())
 		return
 	}
 
 	resp.Value = string(value)
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(resp)
+	_ = WriteJson(w, http.StatusOK, resp)
 }
 
 func (s *ApiServer) DeleteValue(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = WriteJson(w, http.StatusMethodNotAllowed, nil)
 		return
 	}
 
 	req := new(DeleteRequest)
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		_ = WriteJson(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := s.cacher.Delete([]byte(req.Key)); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		_ = WriteJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	_ = WriteJson(w, http.StatusOK, nil)
 }
