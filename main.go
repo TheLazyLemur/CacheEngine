@@ -82,9 +82,13 @@ func testClient() {
 				fmt.Println(string(resp))
 			}
 
-			err = client.All(context.Background())
+			keys, err := client.All(context.Background())
 			if err != nil {
 				log.Fatal(err)
+			}
+
+			for _, k := range keys {
+				fmt.Println(string(k))
 			}
 
 			client.Close()

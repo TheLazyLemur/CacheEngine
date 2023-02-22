@@ -47,7 +47,7 @@ type ResponseJoin struct {
 
 type ResponseAll struct {
 	Status
-	AmountKeys int
+	AmountKeys int32
 	Value      [][]byte
 }
 
@@ -87,8 +87,12 @@ func (r *ResponseAll) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, r.Status)
 
-	// amntKeys := int32(len(r.Value))
-	// _ = binary.Write(buf, binary.LittleEndian, amntKeys)
+	_ = binary.Write(buf, binary.LittleEndian, r.AmountKeys)
+
+	for _, value := range r.Value {
+		_ = binary.Write(buf, binary.LittleEndian, int32(len(value)))
+		_ = binary.Write(buf, binary.LittleEndian, value)
+	}
 
 	return buf.Bytes()
 }
@@ -127,7 +131,19 @@ func ParseJoinReponse(r io.Reader) (*ResponseJoin, error) {
 func ParseAllReponse(r io.Reader) (*ResponseAll, error) {
 	resp := &ResponseAll{}
 	resp.Value = make([][]byte, 0)
+
 	err := binary.Read(r, binary.LittleEndian, &resp.Status)
+	_ = binary.Read(r, binary.LittleEndian, &resp.AmountKeys)
+
+	for i := 0; i < int(resp.AmountKeys); i++ {
+		var valueLen int32
+		_ = binary.Read(r, binary.LittleEndian, &valueLen)
+
+		value := make([]byte, valueLen)
+		_ = binary.Read(r, binary.LittleEndian, &value)
+
+		resp.Value = append(resp.Value, value)
+	}
 
 	return resp, err
 }

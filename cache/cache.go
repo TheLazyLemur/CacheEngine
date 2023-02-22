@@ -87,8 +87,8 @@ func (c *Cache) All() ([][]byte, error) {
 
 	ks := make([][]byte, 0)
 
-	for _, v := range c.data {
-		ks = append(ks, v)
+	for k := range c.data {
+		ks = append(ks, []byte(k))
 	}
 
 	return ks, nil

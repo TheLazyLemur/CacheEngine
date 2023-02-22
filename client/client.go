@@ -79,9 +79,7 @@ func (c *Client) Get(ctx context.Context, key []byte) ([]byte, error) {
 }
 
 func (c *Client) Delete(ctx context.Context, key []byte) error {
-	cmd := &protocol.CommandDel{
-		Key: key,
-	}
+	cmd := &protocol.CommandDel{Key: key}
 
 	_, err := c.conn.Write(cmd.Bytes())
 	if err != nil {
@@ -110,24 +108,24 @@ func (c *Client) Join(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) All(ctx context.Context) error {
+func (c *Client) All(ctx context.Context) ([][]byte, error) {
 	cmd := &protocol.CommandAll{}
 
 	_, err := c.conn.Write(cmd.Bytes())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := protocol.ParseAllReponse(c.conn)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if resp.Status != protocol.StatusOK {
-		return fmt.Errorf("server response with a non ok status: %s", resp.Status)
+		return nil, fmt.Errorf("server response with a non ok status: %s", resp.Status)
 	}
 
-	return nil
+	return resp.Value, nil
 }
 
 func (c *Client) Close() error {

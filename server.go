@@ -174,11 +174,11 @@ func (s *Server) handleJoinCommand(conn net.Conn, cmd *protocol.CommandJoin) err
 func (s *Server) handleAllCommand(conn net.Conn, cmd *protocol.CommandAll) error {
 	resp := protocol.ResponseAll{}
 	x, _ := s.cacher.All()
-	ks := make([][]byte, len(x))
+	ks := make([][]byte, 0)
+	ks = append(ks, x...)
 	resp.Status = protocol.StatusOK
 	resp.Value = ks
-	resp.AmountKeys = len(x)
+	resp.AmountKeys = int32(len(x))
 	_, err := conn.Write(resp.Bytes())
-	log.Println(resp.AmountKeys)
 	return err
 }
