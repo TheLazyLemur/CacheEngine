@@ -64,9 +64,18 @@ func WriteJson(w http.ResponseWriter, status int, v any) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
+type ContextInformation struct {
+	CtxKey string
+	Uuid   string
+}
+
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), "request_id", uuid.New().String())
+		ctxInf := new(ContextInformation)
+		ctxInf.Uuid = uuid.New().String()
+
+		ctxInf.CtxKey = "requestInf"
+		ctx := context.WithValue(r.Context(), ctxInf.CtxKey, ctxInf)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

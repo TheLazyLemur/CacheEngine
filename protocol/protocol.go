@@ -15,9 +15,26 @@ const (
 	CmdGet
 	CmdDel
 	CmdJoin
+	CmdAll
 )
 
 type CommandJoin struct{}
+
+type CommandSet struct {
+	Key   []byte
+	Value []byte
+	TTL   int
+}
+
+type CommandGet struct {
+	Key []byte
+}
+
+type CommandDel struct {
+	Key []byte
+}
+
+type CommandAll struct{}
 
 func (c *CommandJoin) Bytes() []byte {
 	buf := new(bytes.Buffer)
@@ -26,10 +43,11 @@ func (c *CommandJoin) Bytes() []byte {
 	return buf.Bytes()
 }
 
-type CommandSet struct {
-	Key   []byte
-	Value []byte
-	TTL   int
+func (c *CommandAll) Bytes() []byte {
+	buf := new(bytes.Buffer)
+	_ = binary.Write(buf, binary.LittleEndian, CmdAll)
+
+	return buf.Bytes()
 }
 
 func (c *CommandSet) Bytes() []byte {
@@ -49,10 +67,6 @@ func (c *CommandSet) Bytes() []byte {
 	return buf.Bytes()
 }
 
-type CommandGet struct {
-	Key []byte
-}
-
 func (c *CommandGet) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, CmdGet)
@@ -62,10 +76,6 @@ func (c *CommandGet) Bytes() []byte {
 	_ = binary.Write(buf, binary.LittleEndian, c.Key)
 
 	return buf.Bytes()
-}
-
-type CommandDel struct {
-	Key []byte
 }
 
 func (c *CommandDel) Bytes() []byte {
@@ -94,6 +104,8 @@ func ParseCommand(r io.Reader) (any, error) {
 		return parseDelCommand(r), nil
 	case CmdJoin:
 		return parseJoinCommand(r), nil
+	case CmdAll:
+		return parseAllCommand(r), nil
 	default:
 		return nil, fmt.Errorf("unknown command: %d", cmd)
 	}
@@ -143,5 +155,10 @@ func parseDelCommand(r io.Reader) *CommandDel {
 
 func parseJoinCommand(r io.Reader) *CommandJoin {
 	cmd := &CommandJoin{}
+	return cmd
+}
+
+func parseAllCommand(r io.Reader) *CommandAll {
+	cmd := &CommandAll{}
 	return cmd
 }

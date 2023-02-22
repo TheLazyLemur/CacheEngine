@@ -32,15 +32,30 @@ type ResponseDelete struct {
 	Status
 }
 
+type ResponseSet struct {
+	Status
+}
+
+type ResponseGet struct {
+	Status
+	Value []byte
+}
+
+type ResponseJoin struct {
+	Status
+}
+
+type ResponseAll struct {
+	Status
+	AmountKeys int
+	Value      [][]byte
+}
+
 func (r *ResponseDelete) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, r.Status)
 
 	return buf.Bytes()
-}
-
-type ResponseSet struct {
-	Status Status
 }
 
 func (r *ResponseSet) Bytes() []byte {
@@ -50,11 +65,6 @@ func (r *ResponseSet) Bytes() []byte {
 	return buf.Bytes()
 }
 
-type ResponseGet struct {
-	Status
-	Value []byte
-}
-
 func (r *ResponseGet) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, r.Status)
@@ -62,6 +72,23 @@ func (r *ResponseGet) Bytes() []byte {
 	valueLen := int32(len(r.Value))
 	_ = binary.Write(buf, binary.LittleEndian, valueLen)
 	_ = binary.Write(buf, binary.LittleEndian, r.Value)
+
+	return buf.Bytes()
+}
+
+func (r *ResponseJoin) Bytes() []byte {
+	buf := new(bytes.Buffer)
+	_ = binary.Write(buf, binary.LittleEndian, r.Status)
+
+	return buf.Bytes()
+}
+
+func (r *ResponseAll) Bytes() []byte {
+	buf := new(bytes.Buffer)
+	_ = binary.Write(buf, binary.LittleEndian, r.Status)
+
+	// amntKeys := int32(len(r.Value))
+	// _ = binary.Write(buf, binary.LittleEndian, amntKeys)
 
 	return buf.Bytes()
 }
@@ -89,4 +116,18 @@ func ParseGetReponse(r io.Reader) (*ResponseGet, error) {
 	_ = binary.Read(r, binary.LittleEndian, &resp.Value)
 
 	return resp, nil
+}
+
+func ParseJoinReponse(r io.Reader) (*ResponseJoin, error) {
+	resp := &ResponseJoin{}
+	err := binary.Read(r, binary.LittleEndian, &resp.Status)
+	return resp, err
+}
+
+func ParseAllReponse(r io.Reader) (*ResponseAll, error) {
+	resp := &ResponseAll{}
+	resp.Value = make([][]byte, 0)
+	err := binary.Read(r, binary.LittleEndian, &resp.Status)
+
+	return resp, err
 }

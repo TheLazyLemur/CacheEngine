@@ -110,6 +110,26 @@ func (c *Client) Join(ctx context.Context) error {
 	return nil
 }
 
+func (c *Client) All(ctx context.Context) error {
+	cmd := &protocol.CommandAll{}
+
+	_, err := c.conn.Write(cmd.Bytes())
+	if err != nil {
+		return err
+	}
+
+	resp, err := protocol.ParseAllReponse(c.conn)
+	if err != nil {
+		return err
+	}
+
+	if resp.Status != protocol.StatusOK {
+		return fmt.Errorf("server response with a non ok status: %s", resp.Status)
+	}
+
+	return nil
+}
+
 func (c *Client) Close() error {
 	return c.conn.Close()
 }

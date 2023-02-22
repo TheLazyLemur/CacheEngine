@@ -30,7 +30,7 @@ func (c *Cache) Delete(key []byte) error {
 	k := string(key)
 
 	delete(c.data, k)
-	//TODO: Remove from database
+	// TODO: Remove from database
 	return nil
 }
 
@@ -79,4 +79,17 @@ func (c *Cache) Set(key, value []byte, ttl int64) error {
 	//TODO: Store in database
 
 	return nil
+}
+
+func (c *Cache) All() ([][]byte, error) {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	ks := make([][]byte, 0)
+
+	for _, v := range c.data {
+		ks = append(ks, v)
+	}
+
+	return ks, nil
 }

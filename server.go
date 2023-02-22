@@ -102,6 +102,8 @@ func (s *Server) handleCommand(conn net.Conn, cmd any) {
 		_ = s.handleDelCommand(conn, v)
 	case *protocol.CommandJoin:
 		_ = s.handleJoinCommand(conn, v)
+	case *protocol.CommandAll:
+		_ = s.handleAllCommand(conn, v)
 	default:
 		fmt.Println("default")
 	}
@@ -161,7 +163,22 @@ func (s *Server) handleDelCommand(conn net.Conn, cmd *protocol.CommandDel) error
 func (s *Server) handleJoinCommand(conn net.Conn, cmd *protocol.CommandJoin) error {
 	s.m.Lock()
 	defer s.m.Unlock()
+	resp := protocol.ResponseJoin{}
 	log.Printf("JOIN %s\n", conn.RemoteAddr())
 	s.followers[conn] = struct{}{}
-	return nil
+	resp.Status = protocol.StatusOK
+	_, err := conn.Write(resp.Bytes())
+	return err
+}
+
+func (s *Server) handleAllCommand(conn net.Conn, cmd *protocol.CommandAll) error {
+	resp := protocol.ResponseAll{}
+	x, _ := s.cacher.All()
+	ks := make([][]byte, len(x))
+	resp.Status = protocol.StatusOK
+	resp.Value = ks
+	resp.AmountKeys = len(x)
+	_, err := conn.Write(resp.Bytes())
+	log.Println(resp.AmountKeys)
+	return err
 }

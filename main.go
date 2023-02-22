@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/TheLazyLemur/cacheengine/cache"
 	"github.com/TheLazyLemur/cacheengine/client"
@@ -18,11 +19,11 @@ func main() {
 	)
 	flag.Parse()
 
-	// go func (){
-	// 	time.Sleep(time.Second * 2)
-	// 	testClient()
-	//
-	// }()
+	go func() {
+		time.Sleep(time.Second * 2)
+		testClient()
+
+	}()
 
 	opts := ServerOpts{
 		ListenAddr: *listenAddr,
@@ -70,6 +71,18 @@ func testClient() {
 			}
 
 			err = client.Set(context.Background(), key2, val, 0)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			resp, err = client.Get(context.Background(), key2)
+			if err != nil {
+				log.Println("key not found")
+			} else {
+				fmt.Println(string(resp))
+			}
+
+			err = client.All(context.Background())
 			if err != nil {
 				log.Fatal(err)
 			}
