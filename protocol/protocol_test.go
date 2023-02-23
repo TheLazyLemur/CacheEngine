@@ -45,6 +45,26 @@ func TestParseDelCommand(t *testing.T) {
 	assert.Equal(t, cmd, pcmd)
 }
 
+func TestParseJoinCommand(t *testing.T) {
+	cmd := &CommandJoin{}
+
+	r := bytes.NewReader(cmd.Bytes())
+	pcmd, err := ParseCommand(r)
+	assert.Nil(t, err)
+
+	assert.Equal(t, cmd, pcmd)
+}
+
+func TestParseAllCommand(t *testing.T) {
+	cmd := &CommandAll{}
+
+	r := bytes.NewReader(cmd.Bytes())
+	pcmd, err := ParseCommand(r)
+	assert.Nil(t, err)
+
+	assert.Equal(t, cmd, pcmd)
+}
+
 func BenchmarkParseCommand(b *testing.B) {
 	cmd := &CommandSet{
 		Key:   []byte("Foo"),
