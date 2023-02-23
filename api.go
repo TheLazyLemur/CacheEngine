@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sort"
 
 	"github.com/TheLazyLemur/cacheengine/cache"
 	"github.com/google/uuid"
@@ -29,6 +30,10 @@ type DeleteRequest struct {
 	Key string `json:"key"`
 }
 
+type AllResponse struct {
+	Keys []string `json:"keys"`
+}
+
 type ApiServerOpts struct {
 	ListenAddr string
 }
@@ -51,6 +56,7 @@ func (s *ApiServer) Run() {
 	router.HandleFunc("/set", s.SetValue)
 	router.HandleFunc("/get", s.GetValue)
 	router.HandleFunc("/delete", s.DeleteValue)
+	router.HandleFunc("/all", s.AllKeys)
 
 	router.Use(loggingMiddleware)
 
@@ -142,4 +148,28 @@ func (s *ApiServer) DeleteValue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = WriteJson(w, http.StatusOK, nil)
+}
+
+func (s *ApiServer) AllKeys(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		_ = WriteJson(w, http.StatusMethodNotAllowed, nil)
+		return
+	}
+
+	keysAsBytes, err := s.cacher.All()
+	if err != nil {
+		_ = WriteJson(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	resp := new(AllResponse)
+	keysAsStrings := make([]string, len(keysAsBytes))
+	for i, key := range keysAsBytes {
+		keysAsStrings[i] = string(key)
+	}
+
+	resp.Keys = keysAsStrings
+	sort.Strings(resp.Keys)
+
+	_ = WriteJson(w, http.StatusOK, resp)
 }
