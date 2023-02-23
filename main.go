@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/TheLazyLemur/cacheengine/cache"
@@ -47,35 +48,31 @@ func main() {
 }
 
 func testClient() {
+	wg := &sync.WaitGroup{}
+
 	client, err := client.New(":3000", client.Options{})
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer client.Close()
+	defer func() {
+		fmt.Println("done")
+	}()
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
 		go func(i int) {
-			key := []byte("Foo")
-			key2 := []byte("Foo2")
-			val := []byte("Bar")
+			defer wg.Done()
 
-			err = client.Set(context.Background(), key, val, 0)
+			key := []byte("Foo" + fmt.Sprint(i))
+			val := []byte("Bar" + fmt.Sprint(i))
+
+			err := client.Set(context.Background(), key, val, 0)
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			resp, err := client.Get(context.Background(), key)
-			if err != nil {
-				log.Println("key not found")
-			} else {
-				fmt.Println(string(resp))
-			}
-
-			err = client.Set(context.Background(), key2, val, 0)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			resp, err = client.Get(context.Background(), key2)
 			if err != nil {
 				log.Println("key not found")
 			} else {
@@ -88,10 +85,10 @@ func testClient() {
 			}
 
 			for _, k := range keys {
-				fmt.Println(string(k))
+				fmt.Println("\t", string(k))
 			}
-
-			client.Close()
 		}(i)
 	}
+
+	wg.Wait()
 }

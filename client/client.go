@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/TheLazyLemur/cacheengine/protocol"
 )
@@ -13,6 +14,7 @@ type Options struct {
 
 type Client struct {
 	conn net.Conn
+	lock sync.Mutex
 }
 
 func New(url string, opt Options) (*Client, error) {
@@ -23,12 +25,16 @@ func New(url string, opt Options) (*Client, error) {
 
 	c := &Client{
 		conn: conn,
+		lock: sync.Mutex{},
 	}
 
 	return c, nil
 }
 
 func (c *Client) Set(ctx context.Context, key, value []byte, ttl int) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	cmd := &protocol.CommandSet{
 		Key:   key,
 		Value: value,
@@ -53,6 +59,9 @@ func (c *Client) Set(ctx context.Context, key, value []byte, ttl int) error {
 }
 
 func (c *Client) Get(ctx context.Context, key []byte) ([]byte, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	cmd := &protocol.CommandGet{
 		Key: key,
 	}
@@ -79,6 +88,9 @@ func (c *Client) Get(ctx context.Context, key []byte) ([]byte, error) {
 }
 
 func (c *Client) Delete(ctx context.Context, key []byte) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	cmd := &protocol.CommandDel{Key: key}
 
 	_, err := c.conn.Write(cmd.Bytes())
@@ -99,6 +111,9 @@ func (c *Client) Delete(ctx context.Context, key []byte) error {
 }
 
 func (c *Client) Join(ctx context.Context) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	cmd := &protocol.CommandJoin{}
 
 	_, err := c.conn.Write(cmd.Bytes())
@@ -109,6 +124,9 @@ func (c *Client) Join(ctx context.Context) error {
 }
 
 func (c *Client) All(ctx context.Context) ([][]byte, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	cmd := &protocol.CommandAll{}
 
 	_, err := c.conn.Write(cmd.Bytes())
