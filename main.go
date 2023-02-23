@@ -50,16 +50,13 @@ func main() {
 func testClient() {
 	wg := &sync.WaitGroup{}
 
-	client, err := client.New(":3000", client.Options{})
+	client, err := client.New(":3000", *client.NewOptions(true))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer client.Close()
-	defer func() {
-		fmt.Println("done")
-	}()
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -91,4 +88,5 @@ func testClient() {
 	}
 
 	wg.Wait()
+	fmt.Println("done")
 }
