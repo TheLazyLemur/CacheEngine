@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/TheLazyLemur/cacheengine/api"
 	"github.com/TheLazyLemur/cacheengine/cache"
 	"github.com/TheLazyLemur/cacheengine/client"
 )
@@ -32,13 +33,13 @@ func main() {
 		LeaderAddr: *leaderAddr,
 	}
 
-	apiOpts := ApiServerOpts{
+	apiOpts := api.ApiServerOpts{
 		ListenAddr: *apiAddr,
 	}
 
 	c := cache.New()
 
-	api := NewApiServer(apiOpts, c)
+	api := api.NewApiServer(apiOpts, c)
 	go api.Run()
 
 	server := NewServer(opts, c)
@@ -56,7 +57,7 @@ func testClient() {
 	}
 	defer client.Close()
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 1; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
