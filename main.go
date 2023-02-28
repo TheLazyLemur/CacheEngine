@@ -11,6 +11,7 @@ import (
 	"github.com/TheLazyLemur/cacheengine/api"
 	"github.com/TheLazyLemur/cacheengine/cache"
 	"github.com/TheLazyLemur/cacheengine/client"
+	"github.com/TheLazyLemur/cacheengine/server"
 )
 
 func main() {
@@ -27,7 +28,7 @@ func main() {
 
 	}()
 
-	opts := ServerOpts{
+	opts := server.ServerOpts{
 		ListenAddr: *listenAddr,
 		IsLeader:   len(*leaderAddr) == 0,
 		LeaderAddr: *leaderAddr,
@@ -42,7 +43,7 @@ func main() {
 	api := api.NewApiServer(apiOpts, c)
 	go api.Run()
 
-	server := NewServer(opts, c)
+	server := server.NewServer(opts, c)
 	if err := server.Start(); err != nil {
 		log.Fatal(err)
 	}
