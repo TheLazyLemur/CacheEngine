@@ -43,7 +43,7 @@ func New(url string, opt Options) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) Set(ctx context.Context, key, value []byte, ttl int) error {
+func (c *Client) Set(_ context.Context, key, value []byte, ttl int) error {
 	if c.threadSafe {
 		c.lock.Lock()
 		defer c.lock.Unlock()
@@ -72,7 +72,7 @@ func (c *Client) Set(ctx context.Context, key, value []byte, ttl int) error {
 	return nil
 }
 
-func (c *Client) Get(ctx context.Context, key []byte) ([]byte, error) {
+func (c *Client) Get(_ context.Context, key []byte) ([]byte, error) {
 	if c.threadSafe {
 		c.lock.Lock()
 		defer c.lock.Unlock()
@@ -103,7 +103,7 @@ func (c *Client) Get(ctx context.Context, key []byte) ([]byte, error) {
 	return resp.Value, nil
 }
 
-func (c *Client) Delete(ctx context.Context, key []byte) error {
+func (c *Client) Delete(_ context.Context, key []byte) error {
 	if c.threadSafe {
 		c.lock.Lock()
 		defer c.lock.Unlock()
@@ -128,7 +128,7 @@ func (c *Client) Delete(ctx context.Context, key []byte) error {
 	return nil
 }
 
-func (c *Client) Join(ctx context.Context) error {
+func (c *Client) Join(_ context.Context) error {
 	if c.threadSafe {
 		c.lock.Lock()
 		defer c.lock.Unlock()
@@ -143,7 +143,7 @@ func (c *Client) Join(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) All(ctx context.Context) ([][]byte, error) {
+func (c *Client) All(_ context.Context) ([][]byte, error) {
 	if c.threadSafe {
 		c.lock.Lock()
 		defer c.lock.Unlock()
@@ -156,7 +156,7 @@ func (c *Client) All(ctx context.Context) ([][]byte, error) {
 		return nil, err
 	}
 
-	resp, err := protocol.ParseAllReponse(c.conn)
+	resp, err := protocol.ParseAllResponse(c.conn)
 	if err != nil {
 		return nil, err
 	}

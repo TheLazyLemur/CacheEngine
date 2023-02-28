@@ -28,23 +28,25 @@ func main() {
 
 	}()
 
-	opts := server.ServerOpts{
+	opts := server.Opts{
 		ListenAddr: *listenAddr,
 		IsLeader:   len(*leaderAddr) == 0,
 		LeaderAddr: *leaderAddr,
 	}
 
-	apiOpts := api.ApiServerOpts{
+	fmt.Println(opts.IsLeader)
+
+	apiOpts := api.ServerOpts{
 		ListenAddr: *apiAddr,
 	}
 
 	c := cache.New()
 
-	api := api.NewApiServer(apiOpts, c)
-	go api.Run()
+	a := api.NewApiServer(apiOpts, c)
+	go a.Run()
 
-	server := server.NewServer(opts, c)
-	if err := server.Start(); err != nil {
+	s := server.NewServer(opts, c)
+	if err := s.Start(); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -52,11 +54,16 @@ func main() {
 func testClient() {
 	wg := &sync.WaitGroup{}
 
-	client, err := client.New(":3000", *client.NewOptions(true))
+	c, err := client.New(":3000", *client.NewOptions(true))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer client.Close()
+	defer func(c *client.Client) {
+		err := c.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(c)
 
 	for i := 0; i < 1; i++ {
 		wg.Add(1)
@@ -66,19 +73,19 @@ func testClient() {
 			key := []byte("Foo" + fmt.Sprint(i))
 			val := []byte("Bar" + fmt.Sprint(i))
 
-			err := client.Set(context.Background(), key, val, 0)
+			err := c.Set(context.Background(), key, val, 0)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			resp, err := client.Get(context.Background(), key)
+			resp, err := c.Get(context.Background(), key)
 			if err != nil {
 				log.Println("key not found")
 			} else {
 				fmt.Println(string(resp))
 			}
 
-			keys, err := client.All(context.Background())
+			keys, err := c.All(context.Background())
 			if err != nil {
 				log.Fatal(err)
 			}

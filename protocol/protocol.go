@@ -153,12 +153,12 @@ func parseDelCommand(r io.Reader) *CommandDel {
 	return cmd
 }
 
-func parseJoinCommand(r io.Reader) *CommandJoin {
+func parseJoinCommand(_ io.Reader) *CommandJoin {
 	cmd := &CommandJoin{}
 	return cmd
 }
 
-func parseAllCommand(r io.Reader) *CommandAll {
+func parseAllCommand(_ io.Reader) *CommandAll {
 	cmd := &CommandAll{}
 	return cmd
 }

@@ -11,23 +11,23 @@ import (
 	"github.com/TheLazyLemur/cacheengine/protocol"
 )
 
-type ServerOpts struct {
+type Opts struct {
 	ListenAddr string
 	IsLeader   bool
 	LeaderAddr string
 }
 
 type Server struct {
-	ServerOpts
+	Opts
 	followers map[net.Conn]struct{}
-	cacher    cache.Cacher
+	cache     cache.Cacher
 	m         sync.Mutex
 }
 
-func NewServer(opts ServerOpts, c cache.Cacher) *Server {
+func NewServer(opts Opts, c cache.Cacher) *Server {
 	return &Server{
-		ServerOpts: opts,
-		cacher:     c,
+		Opts:  opts,
+		cache: c,
 		//TODO: only allocate this as the leader
 		followers: make(map[net.Conn]struct{}),
 		m:         sync.Mutex{},
@@ -101,9 +101,9 @@ func (s *Server) handleCommand(conn net.Conn, cmd any) {
 	case *protocol.CommandDel:
 		_ = s.handleDelCommand(conn, v)
 	case *protocol.CommandJoin:
-		_ = s.handleJoinCommand(conn, v)
+		_ = s.handleJoinCommand(conn)
 	case *protocol.CommandAll:
-		_ = s.handleAllCommand(conn, v)
+		_ = s.handleAllCommand(conn)
 	default:
 		fmt.Println("default")
 	}
@@ -112,7 +112,7 @@ func (s *Server) handleCommand(conn net.Conn, cmd any) {
 func (s *Server) handleSetCommand(conn net.Conn, cmd *protocol.CommandSet) error {
 	// log.Printf("SET %s to %s with ttl of %d\n", cmd.Key, cmd.Value, cmd.TTL)
 	resp := protocol.ResponseSet{}
-	if err := s.cacher.Set(cmd.Key, cmd.Value, int64(cmd.TTL)); err != nil {
+	if err := s.cache.Set(cmd.Key, cmd.Value, int64(cmd.TTL)); err != nil {
 		resp.Status = protocol.StatusError
 		_, _ = conn.Write(resp.Bytes())
 		return err
@@ -128,7 +128,7 @@ func (s *Server) handleSetCommand(conn net.Conn, cmd *protocol.CommandSet) error
 func (s *Server) handleGetCommand(conn net.Conn, cmd *protocol.CommandGet) error {
 	// log.Printf("GET %s\n", cmd.Key)
 	resp := protocol.ResponseGet{}
-	value, err := s.cacher.Get(cmd.Key)
+	value, err := s.cache.Get(cmd.Key)
 	if err != nil {
 		resp.Status = protocol.StatusKeyNotFound
 		_, _ = conn.Write(resp.Bytes())
@@ -146,7 +146,7 @@ func (s *Server) handleGetCommand(conn net.Conn, cmd *protocol.CommandGet) error
 func (s *Server) handleDelCommand(conn net.Conn, cmd *protocol.CommandDel) error {
 	// log.Printf("DEL %s\n", cmd.Key)
 	resp := protocol.ResponseDelete{}
-	err := s.cacher.Delete(cmd.Key)
+	err := s.cache.Delete(cmd.Key)
 	if err != nil {
 		resp.Status = protocol.StatusError
 		_, _ = conn.Write(resp.Bytes())
@@ -160,7 +160,7 @@ func (s *Server) handleDelCommand(conn net.Conn, cmd *protocol.CommandDel) error
 	return err
 }
 
-func (s *Server) handleJoinCommand(conn net.Conn, cmd *protocol.CommandJoin) error {
+func (s *Server) handleJoinCommand(conn net.Conn) error {
 	s.m.Lock()
 	defer s.m.Unlock()
 	resp := protocol.ResponseJoin{}
@@ -171,9 +171,9 @@ func (s *Server) handleJoinCommand(conn net.Conn, cmd *protocol.CommandJoin) err
 	return err
 }
 
-func (s *Server) handleAllCommand(conn net.Conn, cmd *protocol.CommandAll) error {
+func (s *Server) handleAllCommand(conn net.Conn) error {
 	resp := protocol.ResponseAll{}
-	x, _ := s.cacher.All()
+	x, _ := s.cache.All()
 	ks := make([][]byte, 0)
 	ks = append(ks, x...)
 	resp.Status = protocol.StatusOK

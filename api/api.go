@@ -22,7 +22,7 @@ type GetRequest struct {
 	Key string `json:"key"`
 }
 
-type GetResonse struct {
+type GetResponse struct {
 	Value string `json:"value"`
 }
 
@@ -34,23 +34,23 @@ type AllResponse struct {
 	Keys []string `json:"keys"`
 }
 
-type ApiServerOpts struct {
+type ServerOpts struct {
 	ListenAddr string
 }
 
-type ApiServer struct {
-	ApiServerOpts
-	cacher cache.Cacher
+type Server struct {
+	ServerOpts
+	cache cache.Cacher
 }
 
-func NewApiServer(apiServerOpts ApiServerOpts, cache cache.Cacher) *ApiServer {
-	return &ApiServer{
-		ApiServerOpts: apiServerOpts,
-		cacher:        cache,
+func NewApiServer(apiServerOpts ServerOpts, cache cache.Cacher) *Server {
+	return &Server{
+		ServerOpts: apiServerOpts,
+		cache:      cache,
 	}
 }
 
-func (s *ApiServer) Run() {
+func (s *Server) Run() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/set", s.SetValue)
@@ -64,7 +64,7 @@ func (s *ApiServer) Run() {
 	log.Fatal(http.ListenAndServe(s.ListenAddr, router))
 }
 
-func WriteJson(w http.ResponseWriter, status int, v any) error {
+func (s *Server) WriteJson(w http.ResponseWriter, status int, v any) error {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(v)
@@ -86,79 +86,79 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *ApiServer) SetValue(w http.ResponseWriter, r *http.Request) {
+func (s *Server) SetValue(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		_ = WriteJson(w, http.StatusMethodNotAllowed, nil)
+		_ = s.WriteJson(w, http.StatusMethodNotAllowed, nil)
 		return
 	}
 
 	req := new(SetRequest)
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		_ = WriteJson(w, http.StatusBadRequest, err.Error())
+		_ = s.WriteJson(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := s.cacher.Set([]byte(req.Key), []byte(req.Value), req.Ttl); err != nil {
-		_ = WriteJson(w, http.StatusInternalServerError, err.Error())
+	if err := s.cache.Set([]byte(req.Key), []byte(req.Value), req.Ttl); err != nil {
+		_ = s.WriteJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	_ = WriteJson(w, http.StatusCreated, nil)
+	_ = s.WriteJson(w, http.StatusCreated, nil)
 }
 
-func (s *ApiServer) GetValue(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetValue(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		_ = WriteJson(w, http.StatusMethodNotAllowed, nil)
+		_ = s.WriteJson(w, http.StatusMethodNotAllowed, nil)
 		return
 	}
 
 	req := new(GetRequest)
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		_ = WriteJson(w, http.StatusBadRequest, err.Error())
+		_ = s.WriteJson(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	resp := new(GetResonse)
-	value, err := s.cacher.Get([]byte(req.Key))
+	resp := new(GetResponse)
+	value, err := s.cache.Get([]byte(req.Key))
 	if err != nil {
-		_ = WriteJson(w, http.StatusNotFound, err.Error())
+		_ = s.WriteJson(w, http.StatusNotFound, err.Error())
 		return
 	}
 
 	resp.Value = string(value)
 
-	_ = WriteJson(w, http.StatusOK, resp)
+	_ = s.WriteJson(w, http.StatusOK, resp)
 }
 
-func (s *ApiServer) DeleteValue(w http.ResponseWriter, r *http.Request) {
+func (s *Server) DeleteValue(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		_ = WriteJson(w, http.StatusMethodNotAllowed, nil)
+		_ = s.WriteJson(w, http.StatusMethodNotAllowed, nil)
 		return
 	}
 
 	req := new(DeleteRequest)
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		_ = WriteJson(w, http.StatusBadRequest, err.Error())
+		_ = s.WriteJson(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := s.cacher.Delete([]byte(req.Key)); err != nil {
-		_ = WriteJson(w, http.StatusInternalServerError, err.Error())
+	if err := s.cache.Delete([]byte(req.Key)); err != nil {
+		_ = s.WriteJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	_ = WriteJson(w, http.StatusOK, nil)
+	_ = s.WriteJson(w, http.StatusOK, nil)
 }
 
-func (s *ApiServer) AllKeys(w http.ResponseWriter, r *http.Request) {
+func (s *Server) AllKeys(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		_ = WriteJson(w, http.StatusMethodNotAllowed, nil)
+		_ = s.WriteJson(w, http.StatusMethodNotAllowed, nil)
 		return
 	}
 
-	keysAsBytes, err := s.cacher.All()
+	keysAsBytes, err := s.cache.All()
 	if err != nil {
-		_ = WriteJson(w, http.StatusInternalServerError, err.Error())
+		_ = s.WriteJson(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -171,5 +171,5 @@ func (s *ApiServer) AllKeys(w http.ResponseWriter, r *http.Request) {
 	resp.Keys = keysAsStrings
 	sort.Strings(resp.Keys)
 
-	_ = WriteJson(w, http.StatusOK, resp)
+	_ = s.WriteJson(w, http.StatusOK, resp)
 }

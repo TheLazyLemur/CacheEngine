@@ -7,23 +7,23 @@ import (
 	"time"
 )
 
-// TODO: Add database to backup cache
+// TODO: Add database to back up cache
 // TODO: Restore cache from database on startup
 // TODO: Add a cache warmup
 // TODO: Sync cache with database when shutdown
 
-type Cache struct {
+type CacheImpl struct {
 	lock sync.RWMutex
 	data map[string][]byte
 }
 
-func New() *Cache {
-	return &Cache{
+func New() *CacheImpl {
+	return &CacheImpl{
 		data: make(map[string][]byte),
 	}
 }
 
-func (c *Cache) Delete(key []byte) error {
+func (c *CacheImpl) Delete(key []byte) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -34,7 +34,7 @@ func (c *Cache) Delete(key []byte) error {
 	return nil
 }
 
-func (c *Cache) Has(key []byte) bool {
+func (c *CacheImpl) Has(key []byte) bool {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -43,7 +43,7 @@ func (c *Cache) Has(key []byte) bool {
 	return ok
 }
 
-func (c *Cache) Get(key []byte) ([]byte, error) {
+func (c *CacheImpl) Get(key []byte) ([]byte, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
@@ -57,7 +57,7 @@ func (c *Cache) Get(key []byte) ([]byte, error) {
 	return val, nil
 }
 
-func (c *Cache) Set(key, value []byte, ttl int64) error {
+func (c *CacheImpl) Set(key, value []byte, ttl int64) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -81,7 +81,7 @@ func (c *Cache) Set(key, value []byte, ttl int64) error {
 	return nil
 }
 
-func (c *Cache) All() ([][]byte, error) {
+func (c *CacheImpl) All() ([][]byte, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 

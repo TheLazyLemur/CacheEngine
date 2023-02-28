@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func getNewCache(t *testing.T) *Cache {
+func getNewCache(t *testing.T) *CacheImpl {
 	c := New()
 	if c == nil {
 		t.Errorf("new cache returned nil")
@@ -104,7 +104,7 @@ func TestDeleteFromCache(t *testing.T) {
 		t.Errorf("key was not in cache as expected")
 	}
 
-	c.Delete(key)
+	_ = c.Delete(key)
 	hasAfterDelete := c.Has(key)
 	if hasAfterDelete {
 		t.Errorf("key was not deleted from cache")
