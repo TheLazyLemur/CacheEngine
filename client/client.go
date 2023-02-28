@@ -43,6 +43,19 @@ func New(url string, opt Options) (*Client, error) {
 	return c, nil
 }
 
+func NewFromConn(conn net.Conn, opt Options) (*Client, error) {
+	c := &Client{
+		conn:    conn,
+		Options: opt,
+	}
+
+	if opt.threadSafe {
+		c.lock = sync.Mutex{}
+	}
+
+	return c, nil
+}
+
 func (c *Client) Set(_ context.Context, key, value []byte, ttl int) error {
 	if c.threadSafe {
 		c.lock.Lock()
@@ -125,21 +138,6 @@ func (c *Client) Delete(_ context.Context, key []byte) error {
 		return fmt.Errorf("server response with a non ok status: %s", resp.Status)
 	}
 
-	return nil
-}
-
-func (c *Client) Join(_ context.Context) error {
-	if c.threadSafe {
-		c.lock.Lock()
-		defer c.lock.Unlock()
-	}
-
-	cmd := &protocol.CommandJoin{}
-
-	_, err := c.conn.Write(cmd.Bytes())
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

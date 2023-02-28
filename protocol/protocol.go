@@ -36,13 +36,6 @@ type CommandDel struct {
 
 type CommandAll struct{}
 
-func (c *CommandJoin) Bytes() []byte {
-	buf := new(bytes.Buffer)
-	_ = binary.Write(buf, binary.LittleEndian, CmdJoin)
-
-	return buf.Bytes()
-}
-
 func (c *CommandAll) Bytes() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, CmdAll)
@@ -103,7 +96,7 @@ func ParseCommand(r io.Reader) (any, error) {
 	case CmdDel:
 		return parseDelCommand(r), nil
 	case CmdJoin:
-		return parseJoinCommand(r), nil
+		return &CommandJoin{}, nil
 	case CmdAll:
 		return parseAllCommand(r), nil
 	default:
@@ -150,11 +143,6 @@ func parseDelCommand(r io.Reader) *CommandDel {
 	cmd.Key = make([]byte, keyLen)
 	_ = binary.Read(r, binary.LittleEndian, &cmd.Key)
 
-	return cmd
-}
-
-func parseJoinCommand(_ io.Reader) *CommandJoin {
-	cmd := &CommandJoin{}
 	return cmd
 }
 

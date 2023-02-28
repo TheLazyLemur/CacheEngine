@@ -1,13 +1,15 @@
 package server
 
 import (
+	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"log"
 	"net"
-	"sync"
 
 	"github.com/TheLazyLemur/cacheengine/cache"
+	"github.com/TheLazyLemur/cacheengine/client"
 	"github.com/TheLazyLemur/cacheengine/protocol"
 )
 
@@ -19,18 +21,15 @@ type Opts struct {
 
 type Server struct {
 	Opts
-	followers map[net.Conn]struct{}
-	cache     cache.Cacher
-	m         sync.Mutex
+	members map[*client.Client]struct{}
+	cache   cache.Cacher
 }
 
 func NewServer(opts Opts, c cache.Cacher) *Server {
 	return &Server{
-		Opts:  opts,
-		cache: c,
-		//TODO: only allocate this as the leader
-		followers: make(map[net.Conn]struct{}),
-		m:         sync.Mutex{},
+		Opts:    opts,
+		cache:   c,
+		members: make(map[*client.Client]struct{}),
 	}
 }
 
@@ -41,19 +40,16 @@ func (s *Server) Start() error {
 		return fmt.Errorf("listen error: %s", err)
 	}
 
-	log.Printf("server starting on port [%s]\n", s.ListenAddr)
-
-	if !s.IsLeader {
+	if !s.IsLeader && len(s.LeaderAddr) != 0 {
 		go func() {
-			conn, err := net.Dial("tcp", s.LeaderAddr)
-			fmt.Println("Connected with leader:", s.LeaderAddr)
+			err := s.dialLeader()
 			if err != nil {
-				log.Fatal(err.Error())
+				log.Println("failed to dial leader:", err)
 			}
-
-			s.handleConn(conn)
 		}()
 	}
+
+	log.Printf("server starting on port [%s]\n", s.ListenAddr)
 
 	for {
 		conn, err := ln.Accept()
@@ -66,14 +62,27 @@ func (s *Server) Start() error {
 	}
 }
 
+func (s *Server) dialLeader() error {
+	conn, err := net.Dial("tcp", s.LeaderAddr)
+	if err != nil {
+		return fmt.Errorf("error dialing leader: [%s]", err)
+	}
+
+	log.Println("connected to leader:", s.LeaderAddr)
+
+	binary.Write(conn, binary.LittleEndian, protocol.CmdJoin)
+
+	s.handleConn(conn)
+
+	return nil
+}
+
 func (s *Server) handleConn(conn net.Conn) {
 	defer func() {
 		if err := conn.Close(); err != nil {
 			log.Printf("close error: %s\n", err)
 		}
 	}()
-
-	// fmt.Printf("new connection from [%s]\n", conn.RemoteAddr())
 
 	for {
 		cmd, err := protocol.ParseCommand(conn)
@@ -88,8 +97,6 @@ func (s *Server) handleConn(conn net.Conn) {
 
 		go s.handleCommand(conn, cmd)
 	}
-
-	// fmt.Println("connection closed")
 }
 
 func (s *Server) handleCommand(conn net.Conn, cmd any) {
@@ -101,7 +108,7 @@ func (s *Server) handleCommand(conn net.Conn, cmd any) {
 	case *protocol.CommandDel:
 		_ = s.handleDelCommand(conn, v)
 	case *protocol.CommandJoin:
-		_ = s.handleJoinCommand(conn)
+		_ = s.handleJoinCommand(conn, v)
 	case *protocol.CommandAll:
 		_ = s.handleAllCommand(conn)
 	default:
@@ -109,18 +116,42 @@ func (s *Server) handleCommand(conn net.Conn, cmd any) {
 	}
 }
 
+func (s *Server) handleJoinCommand(conn net.Conn, cmd *protocol.CommandJoin) error {
+	op := client.NewOptions(false)
+	c, err := client.NewFromConn(conn, *op)
+	if err != nil {
+		return err
+	}
+
+	s.members[c] = struct{}{}
+	fmt.Println("member just joined the cluster", conn.RemoteAddr())
+	return nil
+}
+
 func (s *Server) handleSetCommand(conn net.Conn, cmd *protocol.CommandSet) error {
-	// log.Printf("SET %s to %s with ttl of %d\n", cmd.Key, cmd.Value, cmd.TTL)
+	log.Printf("SET %s to %s with ttl of %d\n", cmd.Key, cmd.Value, cmd.TTL)
+
+	if s.IsLeader {
+		go func() {
+			for member := range s.members {
+				err := member.Set(context.TODO(), cmd.Key, cmd.Value, cmd.TTL)
+				if err != nil {
+					log.Panicln("failed to forward to memeber:", err)
+				}
+			}
+		}()
+	}
+
 	resp := protocol.ResponseSet{}
 	if err := s.cache.Set(cmd.Key, cmd.Value, int64(cmd.TTL)); err != nil {
 		resp.Status = protocol.StatusError
-		_, _ = conn.Write(resp.Bytes())
+		_, err = conn.Write(resp.Bytes())
 		return err
 	}
 
 	resp.Status = protocol.StatusOK
-
 	_, _ = conn.Write(resp.Bytes())
+	fmt.Println("Finished responding")
 
 	return nil
 }
@@ -157,17 +188,8 @@ func (s *Server) handleDelCommand(conn net.Conn, cmd *protocol.CommandDel) error
 
 	_, err = conn.Write(resp.Bytes())
 
-	return err
-}
+	fmt.Println("DELETING")
 
-func (s *Server) handleJoinCommand(conn net.Conn) error {
-	s.m.Lock()
-	defer s.m.Unlock()
-	resp := protocol.ResponseJoin{}
-	log.Printf("JOIN %s\n", conn.RemoteAddr())
-	s.followers[conn] = struct{}{}
-	resp.Status = protocol.StatusOK
-	_, err := conn.Write(resp.Bytes())
 	return err
 }
 

@@ -122,11 +122,11 @@ func ParseGetReponse(r io.Reader) (*ResponseGet, error) {
 	return resp, nil
 }
 
-//func ParseJoinResponse(r io.Reader) (*ResponseJoin, error) {
-//	resp := &ResponseJoin{}
-//	err := binary.Read(r, binary.LittleEndian, &resp.Status)
-//	return resp, err
-//}
+func ParseJoinResponse(r io.Reader) (*ResponseJoin, error) {
+	resp := &ResponseJoin{}
+	err := binary.Read(r, binary.LittleEndian, &resp.Status)
+	return resp, err
+}
 
 func ParseAllResponse(r io.Reader) (*ResponseAll, error) {
 	resp := &ResponseAll{}

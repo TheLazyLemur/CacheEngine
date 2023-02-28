@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
+	// "time"
 
 	"github.com/TheLazyLemur/cacheengine/api"
 	"github.com/TheLazyLemur/cacheengine/cache"
@@ -22,19 +22,19 @@ func main() {
 	)
 	flag.Parse()
 
-	go func() {
-		time.Sleep(time.Second * 2)
-		testClient()
-
-	}()
-
 	opts := server.Opts{
 		ListenAddr: *listenAddr,
 		IsLeader:   len(*leaderAddr) == 0,
 		LeaderAddr: *leaderAddr,
 	}
 
-	fmt.Println(opts.IsLeader)
+	if opts.IsLeader {
+		go func() {
+			// time.Sleep(time.Second * 10)
+			// testClient()
+
+		}()
+	}
 
 	apiOpts := api.ServerOpts{
 		ListenAddr: *apiAddr,
@@ -42,8 +42,10 @@ func main() {
 
 	c := cache.New()
 
-	a := api.NewApiServer(apiOpts, c)
-	go a.Run()
+	if opts.IsLeader {
+		a := api.NewApiServer(apiOpts, c)
+		go a.Run()
+	}
 
 	s := server.NewServer(opts, c)
 	if err := s.Start(); err != nil {
@@ -78,24 +80,23 @@ func testClient() {
 				log.Fatal(err)
 			}
 
-			resp, err := c.Get(context.Background(), key)
-			if err != nil {
-				log.Println("key not found")
-			} else {
-				fmt.Println(string(resp))
-			}
+			// resp, err := c.Get(context.Background(), key)
+			// if err != nil {
+			// 	log.Println("key not found")
+			// } else {
+			// 	fmt.Println(string(resp))
+			// }
 
-			keys, err := c.All(context.Background())
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			for _, k := range keys {
-				fmt.Println("\t", string(k))
-			}
+			// keys, err := c.All(context.Background())
+			// if err != nil {
+			// 	log.Fatal(err)
+			// }
+			//
+			// for _, k := range keys {
+			// 	fmt.Println("\t", string(k))
+			// }
 		}(i)
 	}
 
 	wg.Wait()
-	fmt.Println("done")
 }
